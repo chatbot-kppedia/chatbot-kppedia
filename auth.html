@@ -1,0 +1,173 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Login - KPedia</title>
+    <meta
+      name="description"
+      content="Masuk ke KPedia untuk mendapatkan informasi Kerja Praktik."
+    />
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+
+    <!-- Font Awesome Icons -->
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    />
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css" />
+
+    <!-- Google Identity Services -->
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+  </head>
+
+  <body class="auth-page">
+    <!-- Background Elements -->
+    <div class="bg-glow bg-glow-1"></div>
+    <div class="bg-glow bg-glow-2"></div>
+
+    <div class="auth-container">
+      <div class="auth-card glass-card">
+        <div class="auth-header text-center">
+          <a
+            href="index.html"
+            class="logo justify-content-center mb-4"
+            style="justify-content: center"
+          >
+            <i class="fa-solid fa-robot"></i>
+            <span>KPedia.</span>
+          </a>
+          <h2 class="auth-title" id="auth-title">Selamat Datang</h2>
+          <p class="auth-subtitle" id="auth-subtitle">
+            Masuk untuk melanjutkan ke KPedia
+          </p>
+        </div>
+
+        <!-- Login Form -->
+        <form id="login-form" class="auth-form active-form">
+          <div class="form-group">
+            <label for="login-identifier">Email / Username</label>
+            <div class="input-with-icon">
+              <i class="fa-regular fa-user"></i>
+              <input
+                type="text"
+                id="login-identifier"
+                placeholder="Masukkan email atau username"
+                required
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-lock"></i>
+              <input
+                type="password"
+                id="login-password"
+                placeholder="Masukkan password"
+                required
+              />
+            </div>
+          </div>
+
+          <div id="login-error" class="error-message"></div>
+
+          <button type="submit" class="btn btn-primary btn-full mt-2">
+            Masuk
+          </button>
+        </form>
+
+        <!-- Register Form -->
+        <form id="register-form" class="auth-form" style="display: none">
+          <div class="form-group">
+            <label for="reg-username">Username</label>
+            <div class="input-with-icon">
+              <i class="fa-regular fa-user"></i>
+              <input
+                type="text"
+                id="reg-username"
+                placeholder="Buat username"
+                required
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="reg-email">Email</label>
+            <div class="input-with-icon">
+              <i class="fa-regular fa-envelope"></i>
+              <input
+                type="email"
+                id="reg-email"
+                placeholder="Masukkan email valid"
+                required
+              />
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="reg-password">Password</label>
+            <div class="input-with-icon">
+              <i class="fa-solid fa-lock"></i>
+              <input
+                type="password"
+                id="reg-password"
+                placeholder="Buat password"
+                required
+              />
+            </div>
+          </div>
+
+          <div id="register-error" class="error-message"></div>
+
+          <button type="submit" class="btn btn-primary btn-full mt-2">
+            Daftar
+          </button>
+        </form>
+
+        <div class="auth-divider">
+          <span>atau</span>
+        </div>
+
+        <!-- Google Login Button Container -->
+        <div class="google-btn-container">
+          <div
+            id="g_id_onload"
+            data-client_id="78364073414-kt9bnp1cl3crpgnmvhmlc18irpj06f1p.apps.googleusercontent.com"
+            data-context="signin"
+            data-ux_mode="popup"
+            data-callback="handleGoogleCredentialResponse"
+            data-auto_prompt="false"
+          ></div>
+
+          <div
+            class="g_id_signin"
+            data-type="standard"
+            data-shape="rectangular"
+            data-theme="outline"
+            data-text="signin_with"
+            data-size="large"
+            data-logo_alignment="left"
+            data-width="100%"
+          ></div>
+        </div>
+
+        <div class="auth-footer text-center mt-4">
+          <p id="toggle-text">
+            Belum punya akun? <a href="#" id="toggle-auth">Daftar sekarang</a>
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="auth.js"></script>
+  </body>
+</html>

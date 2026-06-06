@@ -11,6 +11,43 @@ document.addEventListener('DOMContentLoaded', () => {
         navbar.classList.toggle('scrolled', window.scrollY > 50);
     });
 
+    // Auth Check & UI Update
+    const token = localStorage.getItem('kppedia_token');
+    const user = JSON.parse(localStorage.getItem('kppedia_user') || 'null');
+    
+    // Update Navbar if user is logged in
+    const authBtnContainer = document.getElementById('auth-btn-container');
+    if (authBtnContainer) {
+        if (token && user) {
+            authBtnContainer.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 1rem;">
+                    <span style="font-weight: 600; color: var(--text-main);">Hi, ${user.username}</span>
+                    <button id="logout-btn" class="btn btn-secondary nav-btn" style="padding: 0.5rem 1rem;">Logout</button>
+                </div>
+            `;
+            document.getElementById('logout-btn').addEventListener('click', () => {
+                if (confirm("Apakah Anda yakin ingin keluar dari akun ini?")) {
+                    localStorage.removeItem('kppedia_token');
+                    localStorage.removeItem('kppedia_user');
+                    window.location.reload();
+                }
+            });
+        }
+    }
+
+    // Hero Chat Button behavior
+    const heroChatBtn = document.getElementById('hero-chat-btn');
+    if (heroChatBtn) {
+        heroChatBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            if (!token) {
+                window.location.href = "auth.html";
+            } else {
+                window.location.href = "chatbot.html";
+            }
+        });
+    }
+
     // 2. FAQ Accordion — smooth dengan requestAnimationFrame
     const accordionHeaders = document.querySelectorAll('.accordion-header');
 
@@ -97,103 +134,6 @@ document.addEventListener('DOMContentLoaded', () => {
             document.documentElement.setAttribute('data-theme', 'dark');
             themeIcon.classList.replace('fa-moon', 'fa-sun');
             localStorage.setItem('theme', 'dark');
-        }
-    });
-
-    // 6. Chat Widget
-    const chatToggleBtn = document.getElementById('chat-toggle-btn');
-    const chatCloseBtn = document.getElementById('chat-close-btn');
-    const chatWindow = document.getElementById('chat-window');
-    const chatInput = document.getElementById('chat-input');
-    const chatSendBtn = document.getElementById('chat-send-btn');
-    const chatMessages = document.getElementById('chat-messages');
-
-    const API_URL = '/chat';
-
-    function openChat() {
-        chatWindow.classList.add('open');
-        document.getElementById('chat-toggle-icon').classList.replace('fa-comment-dots', 'fa-xmark');
-        chatInput.focus();
-    }
-
-    function closeChat() {
-        chatWindow.classList.remove('open');
-        document.getElementById('chat-toggle-icon').classList.replace('fa-xmark', 'fa-comment-dots');
-    }
-
-    chatToggleBtn.addEventListener('click', () => {
-        chatWindow.classList.contains('open') ? closeChat() : openChat();
-    });
-
-    chatCloseBtn.addEventListener('click', closeChat);
-
-    function appendMessage(role, text) {
-        const msg = document.createElement('div');
-        msg.classList.add('chat-msg', role);
-        const renderedText = role === 'bot' ? marked.parse(text) : text;
-        msg.innerHTML = `
-            <div class="chat-msg-avatar">
-                <i class="fa-solid ${role === 'bot' ? 'fa-robot' : 'fa-user'}"></i>
-            </div>
-            <div class="chat-msg-bubble">${renderedText}</div>`;
-        chatMessages.appendChild(msg);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-
-    function showTyping() {
-        const typing = document.createElement('div');
-        typing.classList.add('chat-msg', 'bot', 'chat-typing');
-        typing.id = 'typing-indicator';
-        typing.innerHTML = `
-            <div class="chat-msg-avatar">
-                <i class="fa-solid fa-robot"></i>
-            </div>
-            <div class="chat-msg-bubble">
-                <div class="typing-dots">
-                    <span></span><span></span><span></span>
-                </div>
-            </div>`;
-        chatMessages.appendChild(typing);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-    }
-
-    function hideTyping() {
-        const typing = document.getElementById('typing-indicator');
-        if (typing) typing.remove();
-    }
-
-    async function sendMessage() {
-        const message = chatInput.value.trim();
-        if (!message) return;
-
-        appendMessage('user', message);
-        chatInput.value = '';
-        chatSendBtn.disabled = true;
-        showTyping();
-
-        try {
-            const response = await fetch(API_URL, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ message })
-            });
-            const data = await response.json();
-            hideTyping();
-            appendMessage('bot', data.reply || 'Maaf, terjadi kesalahan.');
-        } catch (error) {
-            hideTyping();
-            appendMessage('bot', 'Maaf, tidak dapat terhubung ke server. Pastikan server berjalan.');
-        } finally {
-            chatSendBtn.disabled = false;
-            chatInput.focus();
-        }
-    }
-
-    chatSendBtn.addEventListener('click', sendMessage);
-    chatInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            sendMessage();
         }
     });
 
