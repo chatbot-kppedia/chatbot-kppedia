@@ -56,6 +56,7 @@
 
 html {
     scroll-behavior: smooth;
+    overflow-x: hidden;
 }
 
 body {
@@ -951,10 +952,6 @@ ul {
     bottom: 2rem;
     right: 2rem;
     z-index: 9999;
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 1rem;
 }
 
 .chat-toggle-btn {
@@ -979,6 +976,9 @@ ul {
 }
 
 .chat-window {
+    position: absolute;
+    bottom: calc(100% + 1rem);
+    right: 0;
     width: 380px;
     height: 520px;
     background: var(--bg-dark);
@@ -993,6 +993,7 @@ ul {
     pointer-events: none;
     transition: var(--transition-smooth);
     backdrop-filter: var(--glass-blur);
+    transform-origin: bottom right;
 }
 
 .chat-window.open {
@@ -1238,11 +1239,13 @@ ul {
 
 @media (max-width: 480px) {
     .chat-window {
-        width: calc(100vw - 2rem);
-        height: 70vh;
+        position: fixed;
+        width: 100vw;
+        height: 75vh;
         right: 0;
         bottom: 0;
         border-radius: 24px 24px 0 0;
+        z-index: 10000;
     }
 
     .chat-widget {
