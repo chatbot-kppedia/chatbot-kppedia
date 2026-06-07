@@ -74,12 +74,12 @@ document.addEventListener('DOMContentLoaded', () => {
     const sendBtn = document.getElementById('chat-send-btn');
     const chatMessages = document.getElementById('chat-messages');
     const historyList = document.getElementById('chat-history-list');
-    
+
     // View containers
     const chatViewContainer = document.getElementById('chat-view-container');
     const checklistViewContainer = document.getElementById('checklist-view-container');
     const eligibilityViewContainer = document.getElementById('eligibility-view-container');
-    
+
     const navChecklistBtn = document.getElementById('nav-checklist-btn');
     const closeChecklistBtn = document.getElementById('close-checklist-btn');
     const navEligibilityBtn = document.getElementById('nav-eligibility-btn');
@@ -114,10 +114,10 @@ document.addEventListener('DOMContentLoaded', () => {
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
-    if(navChecklistBtn) navChecklistBtn.addEventListener('click', (e) => { e.preventDefault(); showChecklistView(); });
-    if(closeChecklistBtn) closeChecklistBtn.addEventListener('click', showChatView);
-    if(navEligibilityBtn) navEligibilityBtn.addEventListener('click', (e) => { e.preventDefault(); showEligibilityView(); });
-    if(closeEligibilityBtn) closeEligibilityBtn.addEventListener('click', showChatView);
+    if (navChecklistBtn) navChecklistBtn.addEventListener('click', (e) => { e.preventDefault(); showChecklistView(); });
+    if (closeChecklistBtn) closeChecklistBtn.addEventListener('click', showChatView);
+    if (navEligibilityBtn) navEligibilityBtn.addEventListener('click', (e) => { e.preventDefault(); showEligibilityView(); });
+    if (closeEligibilityBtn) closeEligibilityBtn.addEventListener('click', showChatView);
 
     // Load Conversations
     async function loadConversations() {
@@ -170,7 +170,7 @@ document.addEventListener('DOMContentLoaded', () => {
             } else {
                 alert("Gagal menghapus percakapan.");
             }
-        } catch(e) {
+        } catch (e) {
             console.error("Error deleting chat", e);
         }
     }
@@ -190,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 messages.forEach(msg => appendMessage(msg.role, msg.content));
             }
         } catch (e) { console.error("Error loading messages", e); }
-        
+
         if (window.innerWidth <= 768) {
             document.getElementById('chat-sidebar').classList.remove('active');
         }
@@ -201,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function appendMessage(role, text) {
         const msg = document.createElement('div');
         msg.classList.add('chat-msg', role);
-        
+
         let attachmentHtml = '';
         let optionsHtml = '';
         let processedText = text;
@@ -214,7 +214,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const fileUrl = match[2];
             // Hapus tag dari teks pesan
             processedText = text.replace(match[0], '').trim();
-            
+
             // Render HTML Card
             attachmentHtml = `
                 <div class="chat-document-card">
@@ -237,7 +237,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const optionsString = optMatch[1];
             processedText = processedText.replace(optMatch[0], '').trim();
             const optionsArray = optionsString.split(',');
-            
+
             let buttonsHtml = optionsArray.map(opt => `<button class="chat-option-btn">${opt}</button>`).join('');
             optionsHtml = `<div class="chat-options-container">${buttonsHtml}</div>`;
         }
@@ -253,7 +253,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 ${optionsHtml}
             </div>`;
         chatMessages.appendChild(msg);
-        
+
         // Bind events for option buttons
         if (optionsHtml) {
             const buttons = msg.querySelectorAll('.chat-option-btn');
@@ -264,7 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
             });
         }
-        
+
         chatMessages.scrollTop = chatMessages.scrollHeight;
     }
 
@@ -302,7 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/chat', {
                 method: 'POST',
-                headers: { 
+                headers: {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
@@ -310,7 +310,7 @@ document.addEventListener('DOMContentLoaded', () => {
             });
             const data = await response.json();
             hideTyping();
-            
+
             if (response.status === 401 || response.status === 403) {
                 appendMessage('bot', data.error || 'Sesi telah berakhir, silakan login kembali.');
                 localStorage.removeItem('kppedia_token');
@@ -355,9 +355,407 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // --- Smart Checklist Logic ---
-    async function loadChecklists() {
-        // Fitur checklist telah dinonaktifkan
+    const checklistStages = [
+        {
+            title: "Verifikasi Syarat Kerja Praktik",
+            description: "Pastikan telah lulus minimal 90 SKS dan memenuhi syarat KP."
+        },
+        {
+            title: "Pencarian Instansi & Konsultasi Dosen Pembimbing Akademik",
+            description: "Mencari perusahaan tujuan dan berdiskusi dengan Dosen Pembimbing Akademik."
+        },
+        {
+            title: "Penyusunan Proposal Kerja Praktik",
+            description: "Menyusun proposal sesuai format pedoman KP."
+        },
+        {
+            title: "Pengajuan Permohonan Kerja Praktik",
+            description: "Mengisi formulir pengajuan KP dan mengunggah proposal."
+        },
+        {
+            title: "Pengajuan Surat Pengantar TOSS",
+            description: "Mengajukan surat pengantar KP melalui TOSS."
+        },
+        {
+            title: "Pengiriman Proposal ke Instansi",
+            description: "Mengirim surat pengantar dan proposal ke perusahaan tujuan."
+        },
+        {
+            title: "Penerimaan dari Instansi",
+            description: "Menerima surat penerimaan dari perusahaan atau instansi."
+        },
+        {
+            title: "Pelaksanaan Kerja Praktik",
+            description: "Melaksanakan KP sesuai jadwal, minimal 6 minggu.",
+            subTasks: [
+                "Pelaksanaan Tugas KP sesuai Rencana dan Arahan Pembimbing Lapangan",
+                "Mengumpulkan Data dan Informasi terkait Tugas KP",
+                "Dokumentasi Kegiatan KP",
+
+                "Bimbingan DPA 1",
+                "Bimbingan DPA 2",
+                "Bimbingan DPA 3",
+                "Bimbingan DPA 4",
+
+                "Bimbingan Lapangan 1",
+                "Bimbingan Lapangan 2",
+                "Bimbingan Lapangan 3",
+                "Bimbingan Lapangan 4",
+
+                "Menyelesaikan Tugas dari Pembimbing Lapangan",
+                "Penyampaian Hasil KP ke Perusahaan",
+                "Penilaian Perusahaan Diterima",
+
+                "Selesai KP"
+            ]
+        },
+        {
+            title: "Penyusunan Laporan Kerja Praktik",
+            description: "Menyusun laporan akhir berdasarkan hasil KP."
+        },
+        {
+            title: "Presentasi Hasil Kerja Praktik",
+            description: "Melakukan presentasi hasil KP kepada dosen pembimbing."
+        },
+        {
+            title: "Pengumpulan Laporan Akhir",
+            description: "Mengunggah laporan ke OpenLib dan mengisi formulir pengumpulan."
+        }
+    ];
+
+    function getSubtaskData() {
+        return JSON.parse(
+            localStorage.getItem("kp-subtasks")
+        ) || {};
     }
+
+    function saveSubtaskData(data) {
+        localStorage.setItem(
+            "kp-subtasks",
+            JSON.stringify(data)
+        );
+    }
+
+    // reder checklist
+    function loadChecklists() {
+
+        const container =
+            document.getElementById(
+                "checklist-container"
+            );
+
+        let completed =
+            JSON.parse(
+                localStorage.getItem(
+                    "kp-checklist"
+                )
+            ) || [];
+
+        container.innerHTML = "";
+
+        checklistStages.forEach((item, index) => {
+
+            const checked =
+                completed.includes(index);
+
+            let subTaskHTML = "";
+
+            if (item.subTasks) {
+
+                const subtaskData =
+                    getSubtaskData();
+
+                subTaskHTML = `
+        <div class="subtask-wrapper">
+
+        ${item.subTasks.map((sub, subIndex) => {
+
+                    const subChecked =
+                        subtaskData[index]?.includes(subIndex);
+
+                    return `
+                <label class="subtask-item">
+
+                    <input
+                        type="checkbox"
+                        class="subtask-checkbox"
+                        data-parent="${index}"
+                        data-sub="${subIndex}"
+                        ${subChecked ? "checked" : ""}>
+
+                    <span>${sub}</span>
+
+                </label>
+            `;
+
+                }).join("")}
+
+        </div>
+        `;
+            }
+
+            container.innerHTML += `
+<div class="checklist-item ${checked ? 'completed' : ''}">
+
+    <input
+        type="checkbox"
+        class="checklist-checkbox"
+        ${checked ? 'checked' : ''}
+        ${item.subTasks ? 'disabled' : ''}
+        onchange="toggleChecklist(${index})">
+
+    <div class="checklist-content">
+
+        <label class="checklist-label">
+            ${item.title}
+        </label>
+
+        <p class="checklist-desc">
+            ${item.description}
+        </p>
+
+        ${subTaskHTML}
+
+    </div>
+
+</div>
+`;
+        });
+
+        updateProgress();
+        bindSubtaskEvents();
+    }
+
+    // toggle checklist
+    window.toggleChecklist =
+        function (index) {
+
+            let completed =
+                JSON.parse(
+                    localStorage.getItem(
+                        "kp-checklist"
+                    )
+                ) || [];
+
+            if (
+                completed.includes(index)
+            ) {
+
+                completed =
+                    completed.filter(
+                        i => i !== index
+                    );
+
+            } else {
+
+                completed.push(index);
+
+            }
+
+            localStorage.setItem(
+                "kp-checklist",
+                JSON.stringify(completed)
+            );
+
+            loadChecklists();
+        }
+
+    function bindSubtaskEvents() {
+
+        const subTasks =
+            document.querySelectorAll(
+                ".subtask-checkbox"
+            );
+
+        subTasks.forEach(cb => {
+
+            cb.addEventListener(
+                "change",
+                handleSubtaskChange
+            );
+
+        });
+
+    }
+
+    function handleSubtaskChange(event) {
+
+        const parent =
+            event.target.dataset.parent;
+
+        const subIndex =
+            Number(
+                event.target.dataset.sub
+            );
+
+        const checked =
+            event.target.checked;
+
+        const subtaskData =
+            getSubtaskData();
+
+        if (!subtaskData[parent]) {
+            subtaskData[parent] = [];
+        }
+
+        if (checked) {
+
+            if (
+                !subtaskData[parent]
+                    .includes(subIndex)
+            ) {
+
+                subtaskData[parent]
+                    .push(subIndex);
+
+            }
+
+        } else {
+
+            subtaskData[parent] =
+                subtaskData[parent]
+                    .filter(
+                        i => i !== subIndex
+                    );
+
+        }
+
+        saveSubtaskData(
+            subtaskData
+        );
+
+        checkPelaksanaanKP();
+    }
+
+    function checkPelaksanaanKP() {
+
+        const pelaksanaanIndex = 7;
+
+        const subtaskData =
+            getSubtaskData();
+
+        const totalSubtasks =
+            checklistStages[
+                pelaksanaanIndex
+            ].subTasks.length;
+
+        const completedSubtasks =
+            subtaskData[
+            pelaksanaanIndex
+            ] || [];
+
+        let completed =
+            JSON.parse(
+                localStorage.getItem(
+                    "kp-checklist"
+                )
+            ) || [];
+
+        const allDone =
+            completedSubtasks.length ===
+            totalSubtasks;
+
+        if (allDone) {
+
+            if (
+                !completed.includes(
+                    pelaksanaanIndex
+                )
+            ) {
+
+                completed.push(
+                    pelaksanaanIndex
+                );
+
+            }
+
+        } else {
+
+            completed =
+                completed.filter(
+                    i => i !== pelaksanaanIndex
+                );
+
+        }
+
+        localStorage.setItem(
+            "kp-checklist",
+            JSON.stringify(completed)
+        );
+
+        loadChecklists();
+    }
+
+    //update progress bar
+    function updateProgress() {
+
+        const completed =
+            JSON.parse(
+                localStorage.getItem(
+                    "kp-checklist"
+                )
+            ) || [];
+
+        const percentage =
+            Math.round(
+                (
+                    completed.length /
+                    checklistStages.length
+                ) * 100
+            );
+
+        document.getElementById(
+            "progress-fill"
+        ).style.width =
+            percentage + "%";
+
+        document.getElementById(
+            "progress-text"
+        ).innerText =
+            percentage + "% Selesai";
+
+        const nextStage =
+            checklistStages.find(
+                (_, i) =>
+                    !completed.includes(i)
+            );
+
+        document.getElementById(
+            "next-step-text"
+        ).innerText =
+            nextStage
+                ? nextStage.title
+                : "Semua Tahapan KP Selesai";
+
+        const total = checklistStages.length;
+        const done = completed.length;
+
+        document.getElementById("progress-text").innerText =
+            `${percentage}% Selesai (${done}/${total})`;
+    }
+
+    document
+        .getElementById("reset-checklist")
+        .addEventListener("click", () => {
+
+            const confirmReset =
+                confirm(
+                    "Apakah Anda yakin ingin menghapus seluruh progress KP?"
+                );
+
+            if (!confirmReset) return;
+
+            localStorage.removeItem(
+                "kp-checklist"
+            );
+
+            localStorage.removeItem(
+                "kp-subtasks"
+            );
+
+            loadChecklists();
+
+        });
 
     // --- Eligibility Checker Logic ---
     // Fitur cek kelayakan telah dinonaktifkan
