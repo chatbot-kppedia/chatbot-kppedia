@@ -105,6 +105,7 @@ document.addEventListener('DOMContentLoaded', () => {
         hideAllViews();
         eligibilityViewContainer.style.display = 'flex';
         if (window.innerWidth <= 768 && chatSidebar) chatSidebar.classList.remove('active');
+        loadEligibilityViewContent();
     }
 
     function showChatView() {
@@ -118,6 +119,225 @@ document.addEventListener('DOMContentLoaded', () => {
     if (closeChecklistBtn) closeChecklistBtn.addEventListener('click', showChatView);
     if (navEligibilityBtn) navEligibilityBtn.addEventListener('click', (e) => { e.preventDefault(); showEligibilityView(); });
     if (closeEligibilityBtn) closeEligibilityBtn.addEventListener('click', showChatView);
+
+    // ========== ELIGIBILITY VIEW CONTENT ==========
+    function loadEligibilityViewContent() {
+        const container = eligibilityViewContainer;
+        if (!container) return;
+
+        // Replace content dengan eligibility form yang berfungsi
+        container.innerHTML = `
+            <div class="chat-header glass-panel">
+                <button class="mobile-toggle open-sidebar-btn">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+                <h2>Cek Kelayakan KP</h2>
+                <button id="close-eligibility-btn" class="close-view-btn">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+            </div>
+
+            <div style="flex: 1; overflow-y: auto; padding: 2rem;">
+                <div class="glass-panel" style="border-radius: 15px; padding: 1.5rem 2rem; margin-bottom: 2rem;">
+                    <h2 style="font-size: 1.8rem; margin-bottom: 0.5rem; color: var(--text-main);">
+                        <i class="fa-solid fa-user-check" style="color: var(--primary); margin-right: 10px;"></i>
+                        Cek Kelayakan KP
+                    </h2>
+                    <p style="color: var(--text-muted); margin: 0;">Masukkan data Anda untuk mengetahui apakah Anda memenuhi syarat Kerja Praktik.</p>
+                </div>
+
+                <div class="glass-panel" style="border-radius: 15px; padding: 2rem; max-width: 500px; width: 100%; margin: 0 auto;">
+                    <div style="margin-bottom: 1.5rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--text-main);">
+                            <i class="fa-solid fa-book"></i> Total SKS yang Sudah Ditempuh
+                        </label>
+                        <input type="number" id="eligibility-sks" class="eligibility-input" 
+                               style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--input-bg); color: var(--text-main);"
+                               placeholder="Contoh: 90" min="0" max="160">
+                        <small style="color: var(--text-muted); font-size: 12px;">Minimal SKS: 90</small>
+                    </div>
+
+                    <div style="margin-bottom: 2rem;">
+                        <label style="display: block; margin-bottom: 0.5rem; font-weight: 500; color: var(--text-main);">
+                            <i class="fa-solid fa-chart-line"></i> IPK Saat Ini
+                        </label>
+                        <input type="number" id="eligibility-ipk" class="eligibility-input" 
+                               style="width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 8px; background: var(--input-bg); color: var(--text-main);"
+                               placeholder="Contoh: 3.00" step="0.01" min="0" max="4.00">
+                        <small style="color: var(--text-muted); font-size: 12px;">Minimal IPK: 2.75</small>
+                    </div>
+
+                    <button id="check-eligibility-btn" style="width: 100%; padding: 12px; background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600; cursor: pointer;">
+                        <i class="fa-solid fa-circle-check"></i> Cek Kelayakan
+                    </button>
+
+                    <div id="eligibility-result" style="margin-top: 2rem; display: none;"></div>
+                </div>
+            </div>
+        `;
+
+        // Re-attach close button event
+        const newCloseBtn = document.getElementById('close-eligibility-btn');
+        if (newCloseBtn) {
+            newCloseBtn.addEventListener('click', showChatView);
+        }
+
+        // Bind eligibility check event
+        const checkBtn = document.getElementById('check-eligibility-btn');
+        const sksInput = document.getElementById('eligibility-sks');
+        const ipkInput = document.getElementById('eligibility-ipk');
+        const resultDiv = document.getElementById('eligibility-result');
+
+        if (checkBtn) {
+            checkBtn.addEventListener('click', async () => {
+                const sks = parseFloat(sksInput?.value);
+                const ipk = parseFloat(ipkInput?.value);
+
+                // Validasi input
+                if (isNaN(sks) || sks < 0 || sks > 160) {
+                    showResult('error', '❌ Mohon masukkan jumlah SKS yang valid (0-160)', resultDiv);
+                    return;
+                }
+
+                if (isNaN(ipk) || ipk < 0 || ipk > 4.0) {
+                    showResult('error', '❌ Mohon masukkan IPK yang valid (0-4.00)', resultDiv);
+                    return;
+                }
+
+                // Show loading
+                if (resultDiv) {
+                    resultDiv.style.display = 'block';
+                    resultDiv.innerHTML = '<div style="text-align: center;"><i class="fa-solid fa-spinner fa-spin"></i> Memeriksa...</div>';
+                }
+
+                try {
+                    const response = await fetch('/api/eligibility/check', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ sks, ipk })
+                    });
+
+                    const data = await response.json();
+
+                    if (data.eligible) {
+                        showResult('success', data.message, resultDiv);
+                    } else {
+                        showResult('fail', data.message, resultDiv);
+                    }
+                } catch (error) {
+                    console.error('Error checking eligibility:', error);
+                    showResult('error', '❌ Terjadi kesalahan. Silakan coba lagi.', resultDiv);
+                }
+            });
+        }
+
+        // Enter key support
+        if (sksInput) {
+            sksInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && checkBtn) checkBtn.click();
+            });
+        }
+        if (ipkInput) {
+            ipkInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter' && checkBtn) checkBtn.click();
+            });
+        }
+    }
+
+    function showResult(type, message, resultDiv) {
+        if (!resultDiv) return;
+
+        let icon = '';
+        let title = '';
+        let bgColor = '';
+
+        if (type === 'success') {
+            icon = '<i class="fa-solid fa-circle-check" style="font-size: 24px;"></i>';
+            title = '✅ Memenuhi Syarat';
+            bgColor = 'linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(16, 185, 129, 0.05))';
+        } else if (type === 'fail') {
+            icon = '<i class="fa-solid fa-circle-xmark" style="font-size: 24px;"></i>';
+            title = '❌ Belum Memenuhi Syarat';
+            bgColor = 'linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(239, 68, 68, 0.05))';
+        } else {
+            icon = '<i class="fa-solid fa-circle-exclamation" style="font-size: 24px;"></i>';
+            title = '⚠️ Error';
+            bgColor = 'linear-gradient(135deg, rgba(245, 158, 11, 0.1), rgba(245, 158, 11, 0.05))';
+        }
+
+        resultDiv.style.display = 'block';
+        resultDiv.style.background = bgColor;
+        resultDiv.style.borderRadius = '12px';
+        resultDiv.style.padding = '20px';
+        resultDiv.style.borderLeft = type === 'success' ? '4px solid #10b981' : (type === 'fail' ? '4px solid #ef4444' : '4px solid #f59e0b');
+        
+        // Format message with line breaks
+        const formattedMessage = message.replace(/\n/g, '<br>');
+        
+        resultDiv.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px;">
+                ${icon}
+                <h3 style="margin: 0; color: var(--text-main);">${title}</h3>
+            </div>
+            <div style="color: var(--text-muted); line-height: 1.6;">${formattedMessage}</div>
+        `;
+
+        // Scroll to result
+        resultDiv.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    // ========== CHAT ELIGIBILITY INTENT DETECTION ==========
+    let eligibilityActive = false;
+    const eligibilityUserId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+
+    function isEligibilityIntent(message) {
+        const lowerMessage = message.toLowerCase();
+        const keywords = [
+            'cek eligibility', 'syarat kp', 'apakah saya bisa kp', 'cek kp', 
+            'eligibility checker', 'cek persyaratan kp', 'kelayakan kp', 
+            'apakah saya memenuhi syarat', 'cek syarat kerja praktik',
+            'apa syarat kp', 'syarat kerja praktik', 'bisa kp', 'layak kp'
+        ];
+        return keywords.some(keyword => lowerMessage.includes(keyword));
+    }
+
+    async function startEligibilityChecker() {
+        try {
+            const response = await fetch('/api/eligibility', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: eligibilityUserId, action: 'start' })
+            });
+            const data = await response.json();
+            appendMessage('bot', data.message);
+            return true;
+        } catch (error) {
+            console.error("Error starting eligibility:", error);
+            appendMessage('bot', 'Maaf, terjadi kesalahan. Silakan coba lagi.');
+            return false;
+        }
+    }
+
+    async function processEligibilityInput(message) {
+        try {
+            const response = await fetch('/api/eligibility', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId: eligibilityUserId, action: 'process', message: message })
+            });
+            const data = await response.json();
+            appendMessage('bot', data.message);
+            if (data.done === true) {
+                eligibilityActive = false;
+            }
+            return true;
+        } catch (error) {
+            console.error("Error processing eligibility:", error);
+            appendMessage('bot', 'Maaf, terjadi kesalahan. Silakan coba lagi.');
+            eligibilityActive = false;
+            return false;
+        }
+    }
 
     // Load Conversations
     async function loadConversations() {
@@ -300,6 +520,26 @@ document.addEventListener('DOMContentLoaded', () => {
         showTyping();
 
         try {
+            // Cek apakah ini intent eligibility dan tidak sedang dalam sesi eligibility
+            if (!eligibilityActive && isEligibilityIntent(message)) {
+                hideTyping();
+                eligibilityActive = true;
+                await startEligibilityChecker();
+                sendBtn.disabled = false;
+                chatInput.focus();
+                return;
+            }
+
+            // Jika sedang dalam sesi eligibility
+            if (eligibilityActive) {
+                hideTyping();
+                await processEligibilityInput(message);
+                sendBtn.disabled = false;
+                chatInput.focus();
+                return;
+            }
+
+            // Jika bukan eligibility, lanjut ke RAG biasa
             const response = await fetch('/chat', {
                 method: 'POST',
                 headers: {
@@ -345,13 +585,14 @@ document.addEventListener('DOMContentLoaded', () => {
     // New Chat Button
     document.getElementById('new-chat-btn').addEventListener('click', () => {
         currentConversationId = null;
+        eligibilityActive = false; // Reset eligibility state saat new chat
         chatMessages.innerHTML = `
             <div class="chat-msg bot">
                 <div class="chat-msg-avatar"><i class="fa-solid fa-robot"></i></div>
                 <div class="chat-msg-bubble">Halo! Saya KPedia, asisten AI untuk Kerja Praktik di Telkom University Surabaya. Ada yang bisa saya bantu hari ini?</div>
             </div>`;
         loadConversations();
-        showChatView(); // Pastikan tampilkan chat view
+        showChatView();
     });
 
     // --- Smart Checklist Logic ---
@@ -391,21 +632,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 "Pelaksanaan Tugas KP sesuai Rencana dan Arahan Pembimbing Lapangan",
                 "Mengumpulkan Data dan Informasi terkait Tugas KP",
                 "Dokumentasi Kegiatan KP",
-
                 "Bimbingan DPA 1",
                 "Bimbingan DPA 2",
                 "Bimbingan DPA 3",
                 "Bimbingan DPA 4",
-
                 "Bimbingan Lapangan 1",
                 "Bimbingan Lapangan 2",
                 "Bimbingan Lapangan 3",
                 "Bimbingan Lapangan 4",
-
                 "Menyelesaikan Tugas dari Pembimbing Lapangan",
                 "Penyampaian Hasil KP ke Perusahaan",
                 "Penilaian Perusahaan Diterima",
-
                 "Selesai KP"
             ]
         },
@@ -424,340 +661,113 @@ document.addEventListener('DOMContentLoaded', () => {
     ];
 
     function getSubtaskData() {
-        return JSON.parse(
-            localStorage.getItem("kp-subtasks")
-        ) || {};
+        return JSON.parse(localStorage.getItem("kp-subtasks")) || {};
     }
 
     function saveSubtaskData(data) {
-        localStorage.setItem(
-            "kp-subtasks",
-            JSON.stringify(data)
-        );
+        localStorage.setItem("kp-subtasks", JSON.stringify(data));
     }
 
-    // reder checklist
     function loadChecklists() {
-
-        const container =
-            document.getElementById(
-                "checklist-container"
-            );
-
-        let completed =
-            JSON.parse(
-                localStorage.getItem(
-                    "kp-checklist"
-                )
-            ) || [];
-
+        const container = document.getElementById("checklist-container");
+        let completed = JSON.parse(localStorage.getItem("kp-checklist")) || [];
         container.innerHTML = "";
 
         checklistStages.forEach((item, index) => {
-
-            const checked =
-                completed.includes(index);
-
+            const checked = completed.includes(index);
             let subTaskHTML = "";
 
             if (item.subTasks) {
-
-                const subtaskData =
-                    getSubtaskData();
-
-                subTaskHTML = `
-        <div class="subtask-wrapper">
-
-        ${item.subTasks.map((sub, subIndex) => {
-
-                    const subChecked =
-                        subtaskData[index]?.includes(subIndex);
-
-                    return `
-                <label class="subtask-item">
-
-                    <input
-                        type="checkbox"
-                        class="subtask-checkbox"
-                        data-parent="${index}"
-                        data-sub="${subIndex}"
-                        ${subChecked ? "checked" : ""}>
-
-                    <span>${sub}</span>
-
-                </label>
-            `;
-
-                }).join("")}
-
-        </div>
-        `;
+                const subtaskData = getSubtaskData();
+                subTaskHTML = `<div class="subtask-wrapper">${item.subTasks.map((sub, subIndex) => {
+                    const subChecked = subtaskData[index]?.includes(subIndex);
+                    return `<label class="subtask-item">
+                        <input type="checkbox" class="subtask-checkbox" data-parent="${index}" data-sub="${subIndex}" ${subChecked ? "checked" : ""}>
+                        <span>${sub}</span>
+                    </label>`;
+                }).join("")}</div>`;
             }
 
-            container.innerHTML += `
-<div class="checklist-item ${checked ? 'completed' : ''}">
-
-    <input
-        type="checkbox"
-        class="checklist-checkbox"
-        ${checked ? 'checked' : ''}
-        ${item.subTasks ? 'disabled' : ''}
-        onchange="toggleChecklist(${index})">
-
-    <div class="checklist-content">
-
-        <label class="checklist-label">
-            ${item.title}
-        </label>
-
-        <p class="checklist-desc">
-            ${item.description}
-        </p>
-
-        ${subTaskHTML}
-
-    </div>
-
-</div>
-`;
+            container.innerHTML += `<div class="checklist-item ${checked ? 'completed' : ''}">
+                <input type="checkbox" class="checklist-checkbox" ${checked ? 'checked' : ''} ${item.subTasks ? 'disabled' : ''} onchange="toggleChecklist(${index})">
+                <div class="checklist-content">
+                    <label class="checklist-label">${item.title}</label>
+                    <p class="checklist-desc">${item.description}</p>
+                    ${subTaskHTML}
+                </div>
+            </div>`;
         });
 
         updateProgress();
         bindSubtaskEvents();
     }
 
-    // toggle checklist
-    window.toggleChecklist =
-        function (index) {
-
-            let completed =
-                JSON.parse(
-                    localStorage.getItem(
-                        "kp-checklist"
-                    )
-                ) || [];
-
-            if (
-                completed.includes(index)
-            ) {
-
-                completed =
-                    completed.filter(
-                        i => i !== index
-                    );
-
-            } else {
-
-                completed.push(index);
-
-            }
-
-            localStorage.setItem(
-                "kp-checklist",
-                JSON.stringify(completed)
-            );
-
-            loadChecklists();
+    window.toggleChecklist = function (index) {
+        let completed = JSON.parse(localStorage.getItem("kp-checklist")) || [];
+        if (completed.includes(index)) {
+            completed = completed.filter(i => i !== index);
+        } else {
+            completed.push(index);
         }
+        localStorage.setItem("kp-checklist", JSON.stringify(completed));
+        loadChecklists();
+    }
 
     function bindSubtaskEvents() {
-
-        const subTasks =
-            document.querySelectorAll(
-                ".subtask-checkbox"
-            );
-
+        const subTasks = document.querySelectorAll(".subtask-checkbox");
         subTasks.forEach(cb => {
-
-            cb.addEventListener(
-                "change",
-                handleSubtaskChange
-            );
-
+            cb.addEventListener("change", handleSubtaskChange);
         });
-
     }
 
     function handleSubtaskChange(event) {
+        const parent = event.target.dataset.parent;
+        const subIndex = Number(event.target.dataset.sub);
+        const checked = event.target.checked;
+        const subtaskData = getSubtaskData();
 
-        const parent =
-            event.target.dataset.parent;
-
-        const subIndex =
-            Number(
-                event.target.dataset.sub
-            );
-
-        const checked =
-            event.target.checked;
-
-        const subtaskData =
-            getSubtaskData();
-
-        if (!subtaskData[parent]) {
-            subtaskData[parent] = [];
-        }
-
+        if (!subtaskData[parent]) subtaskData[parent] = [];
         if (checked) {
-
-            if (
-                !subtaskData[parent]
-                    .includes(subIndex)
-            ) {
-
-                subtaskData[parent]
-                    .push(subIndex);
-
-            }
-
+            if (!subtaskData[parent].includes(subIndex)) subtaskData[parent].push(subIndex);
         } else {
-
-            subtaskData[parent] =
-                subtaskData[parent]
-                    .filter(
-                        i => i !== subIndex
-                    );
-
+            subtaskData[parent] = subtaskData[parent].filter(i => i !== subIndex);
         }
-
-        saveSubtaskData(
-            subtaskData
-        );
-
+        saveSubtaskData(subtaskData);
         checkPelaksanaanKP();
     }
 
     function checkPelaksanaanKP() {
-
         const pelaksanaanIndex = 7;
-
-        const subtaskData =
-            getSubtaskData();
-
-        const totalSubtasks =
-            checklistStages[
-                pelaksanaanIndex
-            ].subTasks.length;
-
-        const completedSubtasks =
-            subtaskData[
-            pelaksanaanIndex
-            ] || [];
-
-        let completed =
-            JSON.parse(
-                localStorage.getItem(
-                    "kp-checklist"
-                )
-            ) || [];
-
-        const allDone =
-            completedSubtasks.length ===
-            totalSubtasks;
+        const subtaskData = getSubtaskData();
+        const totalSubtasks = checklistStages[pelaksanaanIndex].subTasks.length;
+        const completedSubtasks = subtaskData[pelaksanaanIndex] || [];
+        let completed = JSON.parse(localStorage.getItem("kp-checklist")) || [];
+        const allDone = completedSubtasks.length === totalSubtasks;
 
         if (allDone) {
-
-            if (
-                !completed.includes(
-                    pelaksanaanIndex
-                )
-            ) {
-
-                completed.push(
-                    pelaksanaanIndex
-                );
-
-            }
-
+            if (!completed.includes(pelaksanaanIndex)) completed.push(pelaksanaanIndex);
         } else {
-
-            completed =
-                completed.filter(
-                    i => i !== pelaksanaanIndex
-                );
-
+            completed = completed.filter(i => i !== pelaksanaanIndex);
         }
-
-        localStorage.setItem(
-            "kp-checklist",
-            JSON.stringify(completed)
-        );
-
+        localStorage.setItem("kp-checklist", JSON.stringify(completed));
         loadChecklists();
     }
 
-    //update progress bar
     function updateProgress() {
-
-        const completed =
-            JSON.parse(
-                localStorage.getItem(
-                    "kp-checklist"
-                )
-            ) || [];
-
-        const percentage =
-            Math.round(
-                (
-                    completed.length /
-                    checklistStages.length
-                ) * 100
-            );
-
-        document.getElementById(
-            "progress-fill"
-        ).style.width =
-            percentage + "%";
-
-        document.getElementById(
-            "progress-text"
-        ).innerText =
-            percentage + "% Selesai";
-
-        const nextStage =
-            checklistStages.find(
-                (_, i) =>
-                    !completed.includes(i)
-            );
-
-        document.getElementById(
-            "next-step-text"
-        ).innerText =
-            nextStage
-                ? nextStage.title
-                : "Semua Tahapan KP Selesai";
-
+        const completed = JSON.parse(localStorage.getItem("kp-checklist")) || [];
+        const percentage = Math.round((completed.length / checklistStages.length) * 100);
+        document.getElementById("progress-fill").style.width = percentage + "%";
         const total = checklistStages.length;
         const done = completed.length;
-
-        document.getElementById("progress-text").innerText =
-            `${percentage}% Selesai (${done}/${total})`;
+        document.getElementById("progress-text").innerHTML = `${percentage}% Selesai (${done}/${total})`;
+        const nextStage = checklistStages.find((_, i) => !completed.includes(i));
+        document.getElementById("next-step-text").innerText = nextStage ? nextStage.title : "Semua Tahapan KP Selesai";
     }
 
-    document
-        .getElementById("reset-checklist")
-        .addEventListener("click", () => {
-
-            const confirmReset =
-                confirm(
-                    "Apakah Anda yakin ingin menghapus seluruh progress KP?"
-                );
-
-            if (!confirmReset) return;
-
-            localStorage.removeItem(
-                "kp-checklist"
-            );
-
-            localStorage.removeItem(
-                "kp-subtasks"
-            );
-
-            loadChecklists();
-
-        });
-
-    // --- Eligibility Checker Logic ---
-    // Fitur cek kelayakan telah dinonaktifkan
-
-});
+    document.getElementById("reset-checklist")?.addEventListener("click", () => {
+        const confirmReset = confirm("Apakah Anda yakin ingin menghapus seluruh progress KP?");
+        if (!confirmReset) return;
+        localStorage.removeItem("kp-checklist");
+        localStorage.removeItem("kp-subtasks");
+        loadChecklists();
+    });
