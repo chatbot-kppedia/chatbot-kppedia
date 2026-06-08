@@ -238,14 +238,14 @@ document.addEventListener("DOMContentLoaded", () => {
     let optionsHtml = "";
     let processedText = text;
 
-    // Parse special [ATTACHMENT:name|url] tag
-    const attachmentRegex = /\[ATTACHMENT:([^|]+)\|([^\]]+)\]/g;
-    const match = attachmentRegex.exec(text);
-    if (match) {
-      const fileName = match[1];
-      const fileUrl = match[2];
-      // Hapus tag dari teks pesan
-      processedText = text.replace(match[0], "").trim();
+        // Parse special [ATTACHMENT:name|url] tag
+        const attachmentRegex = /\[ATTACHMENT:([^|]+)\|([^\]]+)\]/g;
+        const match = attachmentRegex.exec(text);
+        if (match) {
+            const fileName = match[1];
+            const fileUrl = match[2];
+            // Hapus tag dari teks pesan
+            processedText = text.replace(match[0], '').trim();
 
       // Render HTML Card
       attachmentHtml = `
