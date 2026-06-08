@@ -10,6 +10,12 @@ const jwt = require("jsonwebtoken");
 const { OAuth2Client } = require("google-auth-library");
 const db = require("./database");
 
+// ========== TAMBAHAN UNTUK ELIGIBILITY CHECKER ==========
+// Hapus kata /backend/
+const EligibilityChecker = require("./eligibilityChecker");
+const eligibilityChecker = new EligibilityChecker();
+// ========================================================
+
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const JWT_SECRET = process.env.JWT_SECRET;
 
@@ -207,6 +213,50 @@ app.post("/api/checklist", authenticateToken, (req, res) => {
         res.json({ message: "Checklist diperbarui." });
     });
 });
+
+// ========== ENDPOINT BARU UNTUK ELIGIBILITY CHECKER ==========
+// Endpoint untuk eligibility checker (tidak perlu autentikasi agar fleksibel)
+app.post("/api/eligibility", (req, res) => {
+    const { userId, message, action } = req.body;
+    
+    if (!userId) {
+        return res.status(400).json({ error: 'userId required' });
+    }
+
+    // Action 'start' untuk memulai proses eligibility
+    if (action === 'start') {
+        const response = eligibilityChecker.start(userId);
+        return res.json(response);
+    }
+
+    // Action 'process' untuk mengirim jawaban user
+    if (action === 'process' && message !== undefined) {
+        const response = eligibilityChecker.processInput(userId, message);
+        return res.json(response);
+    }
+
+    res.status(400).json({ error: 'Invalid action or missing message' });
+});
+
+// Endpoint untuk cek eligibility langsung (one-shot) tanpa sesi
+app.post("/api/eligibility/check", (req, res) => {
+    const { sks, ipk } = req.body;
+    
+    if (sks === undefined || ipk === undefined) {
+        return res.status(400).json({ error: 'sks and ipk are required' });
+    }
+    
+    const sksNum = parseFloat(sks);
+    const ipkNum = parseFloat(ipk);
+    
+    if (isNaN(sksNum) || isNaN(ipkNum)) {
+        return res.status(400).json({ error: 'sks and ipk must be numbers' });
+    }
+    
+    const result = eligibilityChecker.check(sksNum, ipkNum);
+    res.json(result);
+});
+// ==============================================================
 
 // Endpoint chat
 app.post("/chat", authenticateToken, async (req, res) => {
