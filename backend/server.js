@@ -4,7 +4,7 @@ require("dotenv").config({
     path: path.resolve(__dirname, "../.env")
 });
 
-console.log("API KEY =", process.env.GROQ_API_KEY);
+
 
 const express = require("express");
 const cors = require("cors");
@@ -28,7 +28,7 @@ app.use(express.json());
 
 app.use(
     "/documents",
-    express.static(path.join(__dirname, "../documents"))
+    express.static(path.join(__dirname, "data"))
 );
 
 app.use(express.static(path.join(__dirname, "..")));
@@ -334,15 +334,9 @@ ${context}`,
 
         // Cek jika user meminta dokumen
         const lowerMessage = message.toLowerCase();
-        const DOCUMENTS = [
-            { id: "pedoman", name: "Buku Pedoman KP", url: "#", keywords: ["pedoman", "buku", "panduan"] },
-            { id: "proposal", name: "Template Proposal KP", url: "#", keywords: ["proposal", "template proposal"] },
-            { id: "logbook", name: "Form Logbook Harian", url: "#", keywords: ["logbook", "harian", "jurnal"] },
-            { id: "nilai", name: "Form Penilaian Pembimbing", url: "#", keywords: ["nilai", "penilaian", "form nilai"] }
-        ];
 
         let matchedDoc = null;
-        for (const doc of DOCUMENTS) {
+        for (const doc of documents) {
             if (doc.keywords.some(k => lowerMessage.includes(k))) {
                 matchedDoc = doc;
                 break;
@@ -350,11 +344,14 @@ ${context}`,
         }
 
         if (matchedDoc) {
-            // User meminta dokumen spesifik
-            reply += `\n\n[ATTACHMENT:${matchedDoc.name}.pdf|${matchedDoc.url}]`;
+            if (matchedDoc.type === "pdf") {
+                reply += `\n\n[ATTACHMENT:${matchedDoc.name}.pdf|${matchedDoc.url}]`;
+            } else {
+                reply += `\n\n[LINK:${matchedDoc.name}|${matchedDoc.url}]`;
+            }
         } else if (lowerMessage.includes("dokumen") || lowerMessage.includes("form") || lowerMessage.includes("template")) {
             // User meminta dokumen tapi tidak spesifik
-            const optionsList = DOCUMENTS.map(d => d.name).join(',');
+            const optionsList = documents.map(d => d.name).join(',');
             reply += `\n\n[OPTIONS:${optionsList}]`;
         }
 

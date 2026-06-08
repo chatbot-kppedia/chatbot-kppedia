@@ -1,38 +1,58 @@
 const documents = [
   {
-    keywords: ["pedoman kp", "buku pedoman", "panduan kp"],
-    title: "Buku Pedoman KP",
-    type: "pdf"
+    id: "pedoman",
+    name: "Buku Pedoman KP",
+    type: "pdf",
+    url: "/documents/Pedoman%20KP.pdf",
+    keywords: ["pedoman", "panduan", "buku pedoman", "file pedoman kp", "buku pedoman kp", "pedoman kp"]
   },
 
   {
-    keywords: ["pengajuan kp", "daftar kp", "pendaftaran kp"],
-    title: "Form Pengajuan KP",
-    link: "https://tr.ee/76sa3BDGPg"
+    id: "pengajuan",
+    name: "Form Pengajuan KP",
+    type: "link",
+    url: "https://tr.ee/76sa3BDGPg",
+    keywords: ["pengajuan kp", "daftar kp", "pendaftaran kp"]
   },
 
   {
-    keywords: ["logbook", "logbook kp"],
-    title: "Logbook KP",
-    link: "https://simka.telkomuniversity.ac.id/log-book"
+    id: "logbook",
+    name: "Logbook KP",
+    type: "link",
+    url: "https://simka.telkomuniversity.ac.id/log-book",
+    keywords: ["logbook", "jurnal", "logbook kp"]
   },
 
   {
-    keywords: ["laporan bulanan"],
-    title: "Template Laporan Bulanan",
-    link: "https://tel-u.ac.id/templapbulananinternship"
+    id: "laporan-bulanan",
+    name: "Template Laporan Bulanan",
+    type: "link",
+    url: "https://tel-u.ac.id/templapbulananinternship",
+    keywords: ["laporan bulanan", "template laporan bulanan"]
   },
 
   {
-    keywords: ["template penilaian", "dokumen penilaian"],
-    title: "Template Penilaian",
-    link: "https://tel-u.ac.id/templatedokumenpenilaian-plps-eksternal-"
+    id: "penilaian",
+    name: "Template Penilaian",
+    type: "link",
+    url: "https://tel-u.ac.id/templatedokumenpenilaian-plps-eksternal-",
+    keywords: ["penilaian", "form nilai", "template penilaian"]
   },
 
   {
-    keywords: ["upload laporan", "laporan akhir", "pengumpulan laporan"],
-    title: "Pengumpulan Dokumen Akhir",
-    link: "https://tel-u.ac.id/unggahnilaimagangberdampak2526genap"
+    id: "upload",
+    name: "Pengumpulan Dokumen Akhir",
+    type: "link",
+    url: "https://tel-u.ac.id/unggahnilaimagangberdampak2526genap",
+    keywords: ["upload laporan", "pengumpulan laporan akhir", "pengumpulan laporan", "form laporan akhir"]
+  },
+
+  {
+    id: "laporan-akhir",
+    name: "Template Laporan Akhir",
+    type: "link",
+    url: "https://tel-u.ac.id/template-lapakhir-fp",
+    keywords: ["laporan akhir", "template laporan akhir", "format laporan akhir", "laporan kp akhir", "template lapakhir"]
   }
 ];
 

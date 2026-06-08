@@ -141,7 +141,9 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadConversations() {
     try {
       const res = await fetch("/api/chat/conversations", {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
       });
       if (res.ok) {
         const conversations = await res.json();
@@ -189,7 +191,9 @@ document.addEventListener("DOMContentLoaded", () => {
     try {
       const res = await fetch(`/api/chat/conversations/${id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
       });
       if (res.ok) {
         if (currentConversationId === id) {
@@ -213,7 +217,9 @@ document.addEventListener("DOMContentLoaded", () => {
     chatMessages.innerHTML = ""; // clear chat
     try {
       const res = await fetch(`/api/chat/conversations/${id}/messages`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: {
+          Authorization: `Bearer ${token}`
+        },
       });
       if (res.ok) {
         const messages = await res.json();
@@ -238,14 +244,36 @@ document.addEventListener("DOMContentLoaded", () => {
     let optionsHtml = "";
     let processedText = text;
 
-        // Parse special [ATTACHMENT:name|url] tag
-        const attachmentRegex = /\[ATTACHMENT:([^|]+)\|([^\]]+)\]/g;
-        const match = attachmentRegex.exec(text);
-        if (match) {
-            const fileName = match[1];
-            const fileUrl = match[2];
-            // Hapus tag dari teks pesan
-            processedText = text.replace(match[0], '').trim();
+    // Parse special [LINK:name|url] tag
+    const linkRegex = /\[LINK:([^|]+)\|([^\]]+)\]/g;
+    const linkMatch = linkRegex.exec(processedText);
+    if (linkMatch) {
+      const linkName = linkMatch[1];
+      const linkUrl = linkMatch[2];
+      processedText = processedText.replace(linkMatch[0], '').trim();
+
+      attachmentHtml = `
+                <div class="chat-document-card">
+                    <div class="doc-icon"><i class="fa-solid fa-link"></i></div>
+                    <div class="doc-info">
+                        <div class="doc-name">${linkName}</div>
+                        <div class="doc-size">Website Link</div>
+                    </div>
+                    <a href="${linkUrl}" target="_blank" class="doc-download" title="Buka Tautan">
+                        <i class="fa-solid fa-arrow-up-right-from-square"></i>
+                    </a>
+                </div>
+            `;
+    }
+
+    // Parse special [ATTACHMENT:name|url] tag
+    const attachmentRegex = /\[ATTACHMENT:([^|]+)\|([^\]]+)\]/g;
+    const match = attachmentRegex.exec(processedText);
+    if (match) {
+      const fileName = match[1];
+      const fileUrl = match[2];
+      // Hapus tag dari teks pesan
+      processedText = processedText.replace(match[0], '').trim();
 
       // Render HTML Card
       attachmentHtml = `
@@ -396,16 +424,13 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // --- Smart Checklist Logic ---
-  const checklistStages = [
-    {
+  const checklistStages = [{
       title: "Verifikasi Syarat Kerja Praktik",
-      description:
-        "Pastikan telah lulus minimal 90 SKS dan memenuhi syarat KP.",
+      description: "Pastikan telah lulus minimal 90 SKS dan memenuhi syarat KP.",
     },
     {
       title: "Pencarian Instansi & Konsultasi Dosen Pembimbing Akademik",
-      description:
-        "Mencari perusahaan tujuan dan berdiskusi dengan Dosen Pembimbing Akademik.",
+      description: "Mencari perusahaan tujuan dan berdiskusi dengan Dosen Pembimbing Akademik.",
     },
     {
       title: "Penyusunan Proposal Kerja Praktik",
@@ -421,8 +446,7 @@ document.addEventListener("DOMContentLoaded", () => {
     },
     {
       title: "Pengiriman Proposal ke Instansi",
-      description:
-        "Mengirim surat pengantar dan proposal ke perusahaan tujuan.",
+      description: "Mengirim surat pengantar dan proposal ke perusahaan tujuan.",
     },
     {
       title: "Penerimaan dari Instansi",
@@ -463,8 +487,7 @@ document.addEventListener("DOMContentLoaded", () => {
     },
     {
       title: "Pengumpulan Laporan Akhir",
-      description:
-        "Mengunggah laporan ke OpenLib dan mengisi formulir pengumpulan.",
+      description: "Mengunggah laporan ke OpenLib dan mengisi formulir pengumpulan.",
     },
   ];
 
@@ -642,9 +665,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
     const nextStage = checklistStages.find((_, i) => !completed.includes(i));
 
-    document.getElementById("next-step-text").innerText = nextStage
-      ? nextStage.title
-      : "Semua Tahapan KP Selesai";
+    document.getElementById("next-step-text").innerText = nextStage ?
+      nextStage.title :
+      "Semua Tahapan KP Selesai";
 
     const total = checklistStages.length;
     const done = completed.length;
