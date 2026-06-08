@@ -1,8 +1,15 @@
-require("dotenv").config();
+const path = require("path");
+
+require("dotenv").config({
+    path: path.resolve(__dirname, "../.env")
+});
+
+console.log("API KEY =", process.env.GROQ_API_KEY);
+
 const express = require("express");
 const cors = require("cors");
-const path = require("path");
 const Groq = require("groq-sdk");
+const documents = require("./documents");
 const { extractAndChunk } = require("./embedder");
 const { storeChunks, retrieve } = require("./retriever");
 const bcrypt = require("bcrypt");
@@ -18,6 +25,12 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 app.use(cors());
 app.use(express.json());
+
+app.use(
+    "/documents",
+    express.static(path.join(__dirname, "../documents"))
+);
+
 app.use(express.static(path.join(__dirname, "..")));
 
 // Inisialisasi chunks saat server start
@@ -31,7 +44,7 @@ async function init() {
 function authenticateToken(req, res, next) {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
-    
+
     if (token == null) return res.status(401).json({ error: "Akses ditolak. Silakan login." });
 
     jwt.verify(token, JWT_SECRET, (err, user) => {
@@ -48,11 +61,11 @@ app.post("/api/auth/register", async (req, res) => {
         if (!username || !email || !password) {
             return res.status(400).json({ error: "Username, email, dan password wajib diisi." });
         }
-        
+
         const hashedPassword = await bcrypt.hash(password, 10);
-        
+
         const query = `INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)`;
-        db.run(query, [username, email, hashedPassword], function(err) {
+        db.run(query, [username, email, hashedPassword], function (err) {
             if (err) {
                 if (err.message.includes("UNIQUE constraint failed")) {
                     return res.status(400).json({ error: "Username atau email sudah terdaftar." });
@@ -69,24 +82,24 @@ app.post("/api/auth/register", async (req, res) => {
 // Endpoint: Login
 app.post("/api/auth/login", (req, res) => {
     const { identifier, password } = req.body; // identifier bisa email atau username
-    
+
     if (!identifier || !password) {
         return res.status(400).json({ error: "Username/Email dan password wajib diisi." });
     }
-    
+
     const query = `SELECT * FROM users WHERE email = ? OR username = ?`;
     db.get(query, [identifier, identifier], async (err, user) => {
         if (err) return res.status(500).json({ error: "Terjadi kesalahan pada database." });
-        
+
         if (!user || !user.password_hash) {
             return res.status(401).json({ error: "Username/Email atau password salah." });
         }
-        
+
         const match = await bcrypt.compare(password, user.password_hash);
         if (!match) {
             return res.status(401).json({ error: "Username/Email atau password salah." });
         }
-        
+
         const token = jwt.sign({ id: user.id, username: user.username, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
         res.json({ message: "Login berhasil!", token, user: { username: user.username, email: user.email } });
     });
@@ -120,9 +133,9 @@ app.post("/api/auth/google", async (req, res) => {
                 return res.json({ message: "Login berhasil!", token: jwtToken, user: { username: user.username, email: user.email } });
             } else {
                 // Buat user baru
-                db.run(`INSERT INTO users (username, email, google_id) VALUES (?, ?, ?)`, [username, email, googleId], function(err) {
+                db.run(`INSERT INTO users (username, email, google_id) VALUES (?, ?, ?)`, [username, email, googleId], function (err) {
                     if (err) return res.status(500).json({ error: "Gagal membuat user baru dari Google." });
-                    
+
                     const jwtToken = jwt.sign({ id: this.lastID, username, email }, JWT_SECRET, { expiresIn: '24h' });
                     res.json({ message: "Login berhasil!", token: jwtToken, user: { username, email } });
                 });
@@ -147,11 +160,11 @@ app.get("/api/chat/conversations", authenticateToken, (req, res) => {
 app.get("/api/chat/conversations/:id/messages", authenticateToken, (req, res) => {
     const userId = req.user.id;
     const conversationId = req.params.id;
-    
+
     // Pastikan conversation milik user ini
     db.get(`SELECT * FROM conversations WHERE id = ? AND user_id = ?`, [conversationId, userId], (err, conv) => {
         if (err || !conv) return res.status(404).json({ error: "Percakapan tidak ditemukan." });
-        
+
         db.all(`SELECT * FROM messages WHERE conversation_id = ? ORDER BY id ASC`, [conversationId], (err, rows) => {
             if (err) return res.status(500).json({ error: "Gagal mengambil pesan." });
             res.json(rows);
@@ -194,7 +207,7 @@ app.get("/api/checklist", authenticateToken, (req, res) => {
 app.post("/api/checklist", authenticateToken, (req, res) => {
     const userId = req.user.id;
     const { taskId, isCompleted } = req.body;
-    
+
     // SQLite upsert
     const query = `
         INSERT INTO user_checklists (user_id, task_id, is_completed) 
@@ -222,7 +235,7 @@ app.post("/chat", authenticateToken, async (req, res) => {
         if (!conversationId) {
             const title = message.split(' ').slice(0, 5).join(' ') + (message.length > 20 ? '...' : '');
             conversationId = await new Promise((resolve, reject) => {
-                db.run(`INSERT INTO conversations (user_id, title) VALUES (?, ?)`, [userId, title], function(err) {
+                db.run(`INSERT INTO conversations (user_id, title) VALUES (?, ?)`, [userId, title], function (err) {
                     if (err) reject(err);
                     else resolve(this.lastID);
                 });
@@ -271,23 +284,94 @@ ${context}`,
         // Cek jika user meminta dokumen
         const lowerMessage = message.toLowerCase();
         const DOCUMENTS = [
-            { id: "pedoman", name: "Buku Pedoman KP", url: "#", keywords: ["pedoman", "buku", "panduan"] },
-            { id: "proposal", name: "Template Proposal KP", url: "#", keywords: ["proposal", "template proposal"] },
-            { id: "logbook", name: "Form Logbook Harian", url: "#", keywords: ["logbook", "harian", "jurnal"] },
-            { id: "nilai", name: "Form Penilaian Pembimbing", url: "#", keywords: ["nilai", "penilaian", "form nilai"] }
+            {
+                id: "pedoman",
+                type: "pdf",
+                name: "Buku Pedoman KP",
+                url: "/documents/Pedoman%20KP.pdf",
+                keywords: ["pedoman", "panduan", "buku pedoman", "file pedoman kp", "buku pedoman kp", "pedoman kp"]
+            },
+
+            {
+                id: "pengajuan",
+                type: "link",
+                name: "Form Pengajuan KP",
+                url: "https://tr.ee/76sa3BDGPg",
+                keywords: ["pengajuan kp", "daftar kp", "pendaftaran kp"]
+            },
+
+            {
+                id: "logbook",
+                type: "link",
+                name: "Logbook KP",
+                url: "https://simka.telkomuniversity.ac.id/log-book",
+                keywords: ["logbook", "jurnal", "logbook kp"]
+            },
+
+            {
+                id: "laporan-bulanan",
+                type: "link",
+                name: "Template Laporan Bulanan",
+                url: "https://tel-u.ac.id/templapbulananinternship",
+                keywords: ["laporan bulanan", "template laporan bulanan"]
+            },
+
+            {
+                id: "penilaian",
+                type: "link",
+                name: "Template Penilaian",
+                url: "https://tel-u.ac.id/templatedokumenpenilaian-plps-eksternal-",
+                keywords: ["penilaian", "form nilai", "template penilaian"]
+            },
+
+            {
+                id: "upload",
+                type: "link",
+                name: "Pengumpulan Dokumen Akhir",
+                url: "https://tel-u.ac.id/unggahnilaimagangberdampak2526genap",
+                keywords: ["upload laporan", "pengumpulan laporan akhir", "pengumpulan laporan", "form laporan akhir"]
+            },
+
+            {
+                id: "laporan-akhir",
+                name: "Template Laporan Akhir",
+                url: "https://tel-u.ac.id/template-lapakhir-fp",
+                keywords: [
+                    "laporan akhir",
+                    "template laporan akhir",
+                    "format laporan akhir",
+                    "laporan kp akhir",
+                    "template lapakhir"
+                ]/*  */
+            },
         ];
 
         let matchedDoc = null;
+
+        console.log("Pesan user:", lowerMessage);
+
         for (const doc of DOCUMENTS) {
+            console.log("Cek dokumen:", doc.name);
+
             if (doc.keywords.some(k => lowerMessage.includes(k))) {
                 matchedDoc = doc;
+                console.log("MATCH DITEMUKAN:", doc.name);
                 break;
             }
         }
 
         if (matchedDoc) {
-            // User meminta dokumen spesifik
-            reply += `\n\n[ATTACHMENT:${matchedDoc.name}.pdf|${matchedDoc.url}]`;
+
+            if (matchedDoc.type === "pdf") {
+
+                reply += `\n\n[ATTACHMENT:${matchedDoc.name}.pdf|${matchedDoc.url}]`;
+
+            } else {
+
+                reply += `\n\n[LINK:${matchedDoc.name}|${matchedDoc.url}]`;
+
+            }
+
         } else if (lowerMessage.includes("dokumen") || lowerMessage.includes("form") || lowerMessage.includes("template")) {
             // User meminta dokumen tapi tidak spesifik
             const optionsList = DOCUMENTS.map(d => d.name).join(',');
