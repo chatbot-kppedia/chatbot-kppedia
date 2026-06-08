@@ -207,7 +207,40 @@ document.addEventListener('DOMContentLoaded', () => {
         let processedText = text;
 
         // Parse special [ATTACHMENT:name|url] tag
+        const linkRegex = /\[LINK:([^|]+)\|([^\]]+)\]/g;
         const attachmentRegex = /\[ATTACHMENT:([^|]+)\|([^\]]+)\]/g;
+
+const linkMatch = linkRegex.exec(processedText);
+
+if (linkMatch) {
+
+    const linkName = linkMatch[1];
+    const linkUrl = linkMatch[2];
+
+    processedText =
+        processedText.replace(linkMatch[0], '').trim();
+
+    attachmentHtml = `
+        <div class="chat-document-card">
+            <div class="doc-icon">
+                <i class="fa-solid fa-link"></i>
+            </div>
+
+            <div class="doc-info">
+                <div class="doc-name">${linkName}</div>
+                <div class="doc-size">Website Link</div>
+            </div>
+
+            <a href="${linkUrl}"
+               target="_blank"
+               class="doc-download">
+
+               <i class="fa-solid fa-arrow-up-right-from-square"></i>
+
+            </a>
+        </div>
+    `;
+}
         const match = attachmentRegex.exec(text);
         if (match) {
             const fileName = match[1];
