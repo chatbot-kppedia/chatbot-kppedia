@@ -14,7 +14,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Auth Check & UI Update
     const token = localStorage.getItem('kppedia_token');
     const user = JSON.parse(localStorage.getItem('kppedia_user') || 'null');
-    
+
     // Update Navbar if user is logged in
     const authBtnContainer = document.getElementById('auth-btn-container');
     if (authBtnContainer) {
@@ -91,7 +91,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const headerOffset = 80;
                 const elementPosition = targetElement.getBoundingClientRect().top;
                 const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
-                window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
+                window.scrollTo({
+                    top: offsetPosition,
+                    behavior: 'smooth'
+                });
             }
         });
     });

@@ -56,4 +56,6 @@ function chunkText(text, chunkSize = 500, overlap = 50) {
   return chunks;
 }
 
-module.exports = { extractAndChunk };
+module.exports = {
+  extractAndChunk
+};

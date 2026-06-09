@@ -105,6 +105,9 @@ document.addEventListener("DOMContentLoaded", () => {
     if (window.innerWidth <= 768 && chatSidebar)
       chatSidebar.classList.remove("active");
     loadChecklists();
+    syncChecklistFromBackend().then(() => {
+      loadChecklists();
+    });
   }
 
   function showEligibilityView() {
@@ -235,6 +238,7 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   loadConversations();
+  syncChecklistFromBackend();
 
   function appendMessage(role, text) {
     const msg = document.createElement("div");
@@ -499,6 +503,55 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.setItem("kp-subtasks", JSON.stringify(data));
   }
 
+  /**
+   * Mengambil data checklist/subtask pengguna dari database backend
+   * dan menyimpannya ke dalam localStorage sebagai cache lokal.
+   * 
+   * @async
+   * @function syncChecklistFromBackend
+   * @returns {Promise<void>}
+   */
+  async function syncChecklistFromBackend() {
+    try {
+      const res = await fetch("/api/checklist", {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const completed = [];
+        const subtaskData = {};
+
+        data.forEach(row => {
+          if (row.is_completed) {
+            if (row.task_id.startsWith("stage_")) {
+              const stageIndex = parseInt(row.task_id.split("_")[1], 10);
+              if (!isNaN(stageIndex)) {
+                completed.push(stageIndex);
+              }
+            } else if (row.task_id.startsWith("subtask_")) {
+              const parts = row.task_id.split("_");
+              const parentIndex = parseInt(parts[1], 10);
+              const subIndex = parseInt(parts[2], 10);
+              if (!isNaN(parentIndex) && !isNaN(subIndex)) {
+                if (!subtaskData[parentIndex]) {
+                  subtaskData[parentIndex] = [];
+                }
+                subtaskData[parentIndex].push(subIndex);
+              }
+            }
+          }
+        });
+
+        localStorage.setItem("kp-checklist", JSON.stringify(completed));
+        localStorage.setItem("kp-subtasks", JSON.stringify(subtaskData));
+      }
+    } catch (err) {
+      console.error("Gagal sinkronisasi checklist dengan backend:", err);
+    }
+  }
+
   // reder checklist
   function loadChecklists() {
     const container = document.getElementById("checklist-container");
@@ -575,19 +628,45 @@ document.addEventListener("DOMContentLoaded", () => {
     bindSubtaskEvents();
   }
 
-  // toggle checklist
-  window.toggleChecklist = function (index) {
+  /**
+   * Mengubah status centang (checked/unchecked) untuk stage utama checklist
+   * dan menyinkronkan perubahan tersebut ke database backend.
+   * 
+   * @async
+   * @function toggleChecklist
+   * @param {number} index - Indeks stage utama checklist yang di-toggle
+   * @returns {Promise<void>}
+   */
+  window.toggleChecklist = async function (index) {
     let completed = JSON.parse(localStorage.getItem("kp-checklist")) || [];
+    let isCompleted = false;
 
     if (completed.includes(index)) {
       completed = completed.filter((i) => i !== index);
     } else {
       completed.push(index);
+      isCompleted = true;
     }
 
     localStorage.setItem("kp-checklist", JSON.stringify(completed));
 
     loadChecklists();
+
+    try {
+      await fetch("/api/checklist", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          taskId: `stage_${index}`,
+          isCompleted: isCompleted ? 1 : 0
+        })
+      });
+    } catch (err) {
+      console.error("Gagal menyimpan ke backend:", err);
+    }
   };
 
   function bindSubtaskEvents() {
@@ -598,7 +677,17 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  function handleSubtaskChange(event) {
+  /**
+   * Menangani perubahan (check/uncheck) pada checkbox subtask,
+   * memperbarui cache lokal, memvalidasi kelayakan induk stage,
+   * serta menyinkronkan data subtask tersebut ke database backend.
+   * 
+   * @async
+   * @function handleSubtaskChange
+   * @param {Event} event - Event change dari elemen checkbox subtask
+   * @returns {Promise<void>}
+   */
+  async function handleSubtaskChange(event) {
     const parent = event.target.dataset.parent;
 
     const subIndex = Number(event.target.dataset.sub);
@@ -622,8 +711,32 @@ document.addEventListener("DOMContentLoaded", () => {
     saveSubtaskData(subtaskData);
 
     checkPelaksanaanKP();
+
+    try {
+      await fetch("/api/checklist", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          taskId: `subtask_${parent}_${subIndex}`,
+          isCompleted: checked ? 1 : 0
+        })
+      });
+    } catch (err) {
+      console.error("Gagal menyimpan subtask ke backend:", err);
+    }
   }
 
+  /**
+   * Memvalidasi apakah seluruh subtask dari stage "Pelaksanaan Kerja Praktik" (indeks 7)
+   * sudah selesai. Jika seluruh subtask selesai, secara otomatis menandai stage utama
+   * sebagai selesai dan menyinkronkan status stage tersebut ke backend.
+   * 
+   * @function checkPelaksanaanKP
+   * @returns {void}
+   */
   function checkPelaksanaanKP() {
     const pelaksanaanIndex = 7;
 
@@ -636,18 +749,37 @@ document.addEventListener("DOMContentLoaded", () => {
     let completed = JSON.parse(localStorage.getItem("kp-checklist")) || [];
 
     const allDone = completedSubtasks.length === totalSubtasks;
+    let statusChanged = false;
 
     if (allDone) {
       if (!completed.includes(pelaksanaanIndex)) {
         completed.push(pelaksanaanIndex);
+        statusChanged = true;
       }
     } else {
-      completed = completed.filter((i) => i !== pelaksanaanIndex);
+      if (completed.includes(pelaksanaanIndex)) {
+        completed = completed.filter((i) => i !== pelaksanaanIndex);
+        statusChanged = true;
+      }
     }
 
     localStorage.setItem("kp-checklist", JSON.stringify(completed));
 
     loadChecklists();
+
+    if (statusChanged) {
+      fetch("/api/checklist", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          taskId: `stage_${pelaksanaanIndex}`,
+          isCompleted: allDone ? 1 : 0
+        })
+      }).catch((err) => console.error("Gagal menyimpan status parent stage ke backend:", err));
+    }
   }
 
   //update progress bar
@@ -676,7 +808,7 @@ document.addEventListener("DOMContentLoaded", () => {
       `${percentage}% Selesai (${done}/${total})`;
   }
 
-  document.getElementById("reset-checklist").addEventListener("click", () => {
+  document.getElementById("reset-checklist").addEventListener("click", async () => {
     const confirmReset = confirm(
       "Apakah Anda yakin ingin menghapus seluruh progress KP?",
     );
@@ -688,10 +820,29 @@ document.addEventListener("DOMContentLoaded", () => {
     localStorage.removeItem("kp-subtasks");
 
     loadChecklists();
+
+    try {
+      await fetch("/api/checklist", {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+    } catch (err) {
+      console.error("Gagal menghapus data checklist di server:", err);
+    }
   });
 
-  // Fungsi global untuk menampilkan hasil kelayakan
-  window.tampilkanHasilKelayakan = function () {
+  /**
+   * Mengambil input SKS, IPK, Status, dan Kelulusan Prasyarat dari form kelayakan,
+   * mengirimkannya ke backend untuk memvalidasi kelayakan Kerja Praktik secara aman,
+   * dan menampilkan hasilnya menggunakan visual SweetAlert2 serta menyisipkannya ke HTML.
+   * 
+   * @async
+   * @function tampilkanHasilKelayakan
+   * @returns {Promise<void>}
+   */
+  window.tampilkanHasilKelayakan = async function () {
     // 1. Ambil elemen dari HTML
     const sksInput = document.getElementById("input-sks");
     const ipkInput = document.getElementById("input-ipk");
@@ -723,52 +874,68 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
 
-    // 4. Logika Kelayakan
-    const sks = parseInt(sksValue);
-    const ipk = parseFloat(ipkValue);
-    let isEligible = false;
-    let pesanHasil = "";
-
-    if (
-      sks >= 90 &&
-      ipk >= 2.0 &&
-      statusValue === "aktif" &&
-      prasyaratValue === "sudah"
-    ) {
-      isEligible = true;
-      pesanHasil =
-        "Selamat! Anda MEMENUHI SYARAT untuk mendaftar Kerja Praktik.";
-    } else {
-      isEligible = false;
-      pesanHasil =
-        "Mohon maaf, Anda BELUM MEMENUHI SYARAT untuk mendaftar Kerja Praktik saat ini.";
-    }
-
-    // 5. Berikan styling default untuk kotaknya
-    tempatHasil.style.marginTop = "1.5rem";
-    tempatHasil.style.padding = "1rem";
-    tempatHasil.style.borderRadius = "8px";
-    tempatHasil.style.fontWeight = "600";
-    tempatHasil.style.textAlign = "center";
-
-    // 6. Tampilkan Hasil menggunakan SweetAlert2
-    if (isEligible) {
-      Swal.fire({
-        icon: "success",
-        title: "Memenuhi Syarat!",
-        text: pesanHasil,
-        confirmButtonColor: "#10b981",
+    // 4. Hubungi Backend untuk Pengecekan Kelayakan
+    try {
+      const res = await fetch("/api/eligibility/check", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          sks: sksValue,
+          ipk: ipkValue,
+          status: statusValue,
+          prasyarat: prasyaratValue
+        })
       });
-    } else {
+
+      if (!res.ok) {
+        throw new Error("Gagal melakukan pengecekan kelayakan.");
+      }
+
+      const result = await res.json();
+      
+      if (result.success) {
+        const { isEligible, message: pesanHasil } = result;
+
+        // 5. Berikan styling default untuk kotaknya
+        tempatHasil.style.marginTop = "1.5rem";
+        tempatHasil.style.padding = "1rem";
+        tempatHasil.style.borderRadius = "8px";
+        tempatHasil.style.fontWeight = "600";
+        tempatHasil.style.textAlign = "center";
+
+        // 6. Tampilkan Hasil menggunakan SweetAlert2
+        if (isEligible) {
+          Swal.fire({
+            icon: "success",
+            title: "Memenuhi Syarat!",
+            text: pesanHasil,
+            confirmButtonColor: "#10b981",
+          });
+        } else {
+          Swal.fire({
+            icon: "error",
+            title: "Belum Memenuhi Syarat",
+            text: pesanHasil,
+            confirmButtonColor: "#ef4444",
+          });
+        }
+
+        // Tampilkan pesannya
+        tempatHasil.innerText = pesanHasil;
+      } else {
+        throw new Error(result.message || "Gagal melakukan pengecekan.");
+      }
+    } catch (err) {
+      console.error(err);
       Swal.fire({
         icon: "error",
-        title: "Belum Memenuhi Syarat",
-        text: pesanHasil,
+        title: "Error",
+        text: "Terjadi kesalahan saat menghubungi server: " + err.message,
         confirmButtonColor: "#ef4444",
       });
     }
-
-    // Tampilkan pesannya
-    tempatHasil.innerText = pesanHasil;
   };
 });

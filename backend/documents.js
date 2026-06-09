@@ -1,5 +1,4 @@
-const documents = [
-  {
+const documents = [{
     id: "pedoman",
     name: "Buku Pedoman KP",
     type: "pdf",

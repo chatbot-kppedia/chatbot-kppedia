@@ -8,7 +8,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
         console.error("❌ Gagal terhubung ke database SQLite:", err.message);
     } else {
         console.log("✅ Terhubung ke database SQLite.");
-        
+
         // Buat tabel users jika belum ada
         const createTableQuery = `
             CREATE TABLE IF NOT EXISTS users (
@@ -20,7 +20,7 @@ const db = new sqlite3.Database(dbPath, (err) => {
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         `;
-        
+
         db.run(createTableQuery, (err) => {
             if (err) {
                 console.error("❌ Gagal membuat tabel users:", err.message);

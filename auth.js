@@ -16,7 +16,7 @@ let isLoginMode = true;
 toggleAuthBtn.addEventListener("click", (e) => {
     e.preventDefault();
     isLoginMode = !isLoginMode;
-    
+
     loginError.textContent = "";
     registerError.textContent = "";
 
@@ -44,19 +44,24 @@ toggleAuthBtn.addEventListener("click", (e) => {
 loginForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     loginError.textContent = "";
-    
+
     const identifier = document.getElementById("login-identifier").value;
     const password = document.getElementById("login-password").value;
 
     try {
         const response = await fetch(`${API_URL}/login`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ identifier, password })
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                identifier,
+                password
+            })
         });
-        
+
         const data = await response.json();
-        
+
         if (response.ok) {
             // Save token and redirect
             localStorage.setItem("kppedia_token", data.token);
@@ -74,7 +79,7 @@ loginForm.addEventListener("submit", async (e) => {
 registerForm.addEventListener("submit", async (e) => {
     e.preventDefault();
     registerError.textContent = "";
-    
+
     const username = document.getElementById("reg-username").value;
     const email = document.getElementById("reg-email").value;
     const password = document.getElementById("reg-password").value;
@@ -82,12 +87,18 @@ registerForm.addEventListener("submit", async (e) => {
     try {
         const response = await fetch(`${API_URL}/register`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, email, password })
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                username,
+                email,
+                password
+            })
         });
-        
+
         const data = await response.json();
-        
+
         if (response.ok) {
             alert("Registrasi berhasil! Silakan login.");
             toggleAuthBtn.click(); // Switch to login mode
@@ -105,12 +116,16 @@ async function handleGoogleCredentialResponse(response) {
     try {
         const res = await fetch(`${API_URL}/google`, {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ token: response.credential })
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({
+                token: response.credential
+            })
         });
-        
+
         const data = await res.json();
-        
+
         if (res.ok) {
             localStorage.setItem("kppedia_token", data.token);
             localStorage.setItem("kppedia_user", JSON.stringify(data.user));

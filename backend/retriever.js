@@ -28,7 +28,10 @@ function retrieve(query, topK = 5) {
   const scores = [];
 
   tfidf.tfidfs(expandedQuery, (i, measure) => {
-    scores.push({ index: i, score: measure });
+    scores.push({
+      index: i,
+      score: measure
+    });
   });
 
   // Urutkan dari skor tertinggi
@@ -43,4 +46,7 @@ function retrieve(query, topK = 5) {
   return topChunks;
 }
 
-module.exports = { storeChunks, retrieve };
+module.exports = {
+  storeChunks,
+  retrieve
+};

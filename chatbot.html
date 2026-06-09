@@ -1,160 +1,132 @@
 <!doctype html>
 <html lang="id">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Chat - KPedia</title>
 
-    <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Chat - KPedia</title>
 
-    <!-- Font Awesome Icons -->
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-    />
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
 
-    <!-- Custom CSS -->
-    <link rel="stylesheet" href="style.css" />
-  </head>
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
 
-  <body class="chatbot-page">
-    <div class="chatbot-container">
-      <!-- Sidebar -->
-      <aside class="chat-sidebar glass-panel" id="chat-sidebar">
-        <div class="sidebar-header">
-          <a href="index.html" class="logo">
-            <i class="fa-solid fa-robot"></i>
-            <span>KPedia.</span>
-          </a>
-          <button
-            id="close-sidebar-btn"
-            class="mobile-close-btn"
-            aria-label="Tutup Sidebar"
-          >
-            <i class="fa-solid fa-times"></i>
-          </button>
-        </div>
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css" />
+</head>
 
-        <button class="btn btn-primary new-chat-btn" id="new-chat-btn">
-          <i class="fa-solid fa-plus"></i> Chat Baru
+<body class="chatbot-page">
+  <div class="chatbot-container">
+    <!-- Sidebar -->
+    <aside class="chat-sidebar glass-panel" id="chat-sidebar">
+      <div class="sidebar-header">
+        <a href="index.html" class="logo">
+          <i class="fa-solid fa-robot"></i>
+          <span>KPedia.</span>
+        </a>
+        <button id="close-sidebar-btn" class="mobile-close-btn" aria-label="Tutup Sidebar">
+          <i class="fa-solid fa-times"></i>
         </button>
+      </div>
 
-        <div class="chat-history-container" id="chat-history-list">
-          <!-- History items injected here -->
+      <button class="btn btn-primary new-chat-btn" id="new-chat-btn">
+        <i class="fa-solid fa-plus"></i> Chat Baru
+      </button>
+
+      <div class="chat-history-container" id="chat-history-list">
+        <!-- History items injected here -->
+      </div>
+
+      <div class="sidebar-nav">
+        <a href="#" class="sidebar-link" id="nav-checklist-btn">
+          <i class="fa-solid fa-list-check"></i> Smart Checklist
+        </a>
+        <a href="#" class="sidebar-link" id="nav-eligibility-btn">
+          <i class="fa-solid fa-user-check"></i> Cek Kelayakan
+        </a>
+        <a href="index.html" class="sidebar-link">
+          <i class="fa-solid fa-house"></i> Kembali ke Beranda
+        </a>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="user-profile-small" id="user-profile-display">
+          <!-- User info injected here -->
         </div>
+        <button class="btn btn-secondary logout-btn-small" id="chat-logout-btn">
+          <i class="fa-solid fa-sign-out-alt"></i> Logout
+        </button>
+      </div>
+    </aside>
 
-        <div class="sidebar-nav">
-          <a href="#" class="sidebar-link" id="nav-checklist-btn">
-            <i class="fa-solid fa-list-check"></i> Smart Checklist
-          </a>
-          <a href="#" class="sidebar-link" id="nav-eligibility-btn">
-            <i class="fa-solid fa-user-check"></i> Cek Kelayakan
-          </a>
-          <a href="index.html" class="sidebar-link">
-            <i class="fa-solid fa-house"></i> Kembali ke Beranda
-          </a>
-        </div>
+    <!-- Main Chat Area -->
+    <main class="chat-main">
+      <!-- Background Glow -->
+      <div class="bg-glow bg-glow-1" style="z-index: -1"></div>
+      <div class="bg-glow bg-glow-2" style="z-index: -1"></div>
 
-        <div class="sidebar-footer">
-          <div class="user-profile-small" id="user-profile-display">
-            <!-- User info injected here -->
-          </div>
-          <button
-            class="btn btn-secondary logout-btn-small"
-            id="chat-logout-btn"
-          >
-            <i class="fa-solid fa-sign-out-alt"></i> Logout
-          </button>
-        </div>
-      </aside>
-
-      <!-- Main Chat Area -->
-      <main class="chat-main">
-        <!-- Background Glow -->
-        <div class="bg-glow bg-glow-1" style="z-index: -1"></div>
-        <div class="bg-glow bg-glow-2" style="z-index: -1"></div>
-
-        <!-- CHAT VIEW -->
-        <div
-          id="chat-view-container"
-          style="
+      <!-- CHAT VIEW -->
+      <div id="chat-view-container" style="
             display: flex;
             flex-direction: column;
             height: 100%;
             width: 100%;
-          "
-        >
-          <div class="chat-header glass-panel">
-            <button id="mobile-sidebar-toggle" class="mobile-toggle">
-              <i class="fa-solid fa-bars"></i>
-            </button>
-            <h2>Asisten Kerja Praktik</h2>
-            <button
-              id="theme-toggle"
-              class="theme-btn"
-              aria-label="Toggle dark mode"
-            >
-              <i class="fa-solid fa-moon"></i>
-            </button>
-          </div>
+          ">
+        <div class="chat-header glass-panel">
+          <button id="mobile-sidebar-toggle" class="mobile-toggle">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <h2>Asisten Kerja Praktik</h2>
+          <button id="theme-toggle" class="theme-btn" aria-label="Toggle dark mode">
+            <i class="fa-solid fa-moon"></i>
+          </button>
+        </div>
 
-          <div class="chat-messages-container" id="chat-messages">
-            <!-- Welcome Message -->
-            <div class="chat-msg bot">
-              <div class="chat-msg-avatar">
-                <i class="fa-solid fa-robot"></i>
-              </div>
-              <div class="chat-msg-bubble">
-                Halo! Saya KPedia, asisten AI untuk Kerja Praktik di Telkom
-                University Surabaya. Ada yang bisa saya bantu hari ini?
-              </div>
+        <div class="chat-messages-container" id="chat-messages">
+          <!-- Welcome Message -->
+          <div class="chat-msg bot">
+            <div class="chat-msg-avatar">
+              <i class="fa-solid fa-robot"></i>
             </div>
-          </div>
-
-          <div class="chat-input-area glass-panel">
-            <div class="chat-input-wrapper">
-              <input
-                type="text"
-                id="chat-input"
-                placeholder="Tanya seputar Kerja Praktik..."
-                autocomplete="off"
-              />
-              <button id="chat-send-btn" class="send-btn">
-                <i class="fa-solid fa-paper-plane"></i>
-              </button>
-            </div>
-            <div class="chat-footer-text">
-              KPedia AI dapat membuat kesalahan. Harap periksa kembali informasi
-              penting di buku pedoman resmi.
+            <div class="chat-msg-bubble">
+              Halo! Saya KPedia, asisten AI untuk Kerja Praktik di Telkom
+              University Surabaya. Ada yang bisa saya bantu hari ini?
             </div>
           </div>
         </div>
 
-        <!-- CHECKLIST VIEW -->
-        <div
-          id="checklist-view-container"
-          style="
+        <div class="chat-input-area glass-panel">
+          <div class="chat-input-wrapper">
+            <input type="text" id="chat-input" placeholder="Tanya seputar Kerja Praktik..." autocomplete="off" />
+            <button id="chat-send-btn" class="send-btn">
+              <i class="fa-solid fa-paper-plane"></i>
+            </button>
+          </div>
+          <div class="chat-footer-text">
+            KPedia AI dapat membuat kesalahan. Harap periksa kembali informasi
+            penting di buku pedoman resmi.
+          </div>
+        </div>
+      </div>
+
+      <!-- CHECKLIST VIEW -->
+      <div id="checklist-view-container" style="
             display: none;
             flex-direction: column;
             height: 100%;
             width: 100%;
-          "
-        >
-          <!-- Header -->
-          <div class="chat-header glass-panel">
-            <button class="mobile-toggle open-sidebar-btn">
-              <i class="fa-solid fa-bars"></i>
-            </button>
-            <h2>Smart Checklist</h2>
-            <button
-              id="close-checklist-btn"
-              style="
+          ">
+        <!-- Header -->
+        <div class="chat-header glass-panel">
+          <button class="mobile-toggle open-sidebar-btn">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <h2>Smart Checklist</h2>
+          <button id="close-checklist-btn" style="
                 background: none;
                 border: none;
                 font-size: 1.5rem;
@@ -163,86 +135,69 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
-              "
-            >
-              <i class="fa-solid fa-times"></i>
-            </button>
-          </div>
+              ">
+            <i class="fa-solid fa-times"></i>
+          </button>
+        </div>
 
-          <!-- Content Area -->
-          <div style="flex: 1; overflow-y: auto; padding: 2rem">
-            <div
-              class="glass-panel"
-              style="
+        <!-- Content Area -->
+        <div style="flex: 1; overflow-y: auto; padding: 2rem">
+          <div class="glass-panel" style="
                 border-radius: 15px;
                 padding: 1.5rem 2rem;
                 margin-bottom: 2rem;
-              "
-            >
-              <h2
-                style="
+              ">
+            <h2 style="
                   font-size: 1.8rem;
                   margin-bottom: 0.5rem;
                   color: var(--text-main);
-                "
-              >
-                <i
-                  class="fa-solid fa-list-check"
-                  style="color: var(--primary); margin-right: 10px"
-                ></i>
-                Smart Checklist KP
-              </h2>
-              <p style="color: var(--text-muted); margin: 0">
-                Pantau progress Kerja Praktik Anda dengan mudah tanpa harus
-                bertanya ke chatbot.
-              </p>
-            </div>
-
-            <div class="glass-panel checklist-progress-card">
-              <h3>📈 Progress Kerja Praktik</h3>
-
-              <div class="progress-wrapper">
-                <div id="progress-fill"></div>
-              </div>
-
-              <p id="progress-text">0% Selesai</p>
-
-              <div class="next-step-box">
-                <strong>Langkah Selanjutnya:</strong>
-                <span id="next-step-text"> Belum ada progress </span>
-              </div>
-
-              <button id="reset-checklist" class="reset-btn">
-                Reset Progress
-              </button>
-            </div>
-
-            <div
-              id="checklist-container"
-              class="checklist-items-container"
-            ></div>
+                ">
+              <i class="fa-solid fa-list-check" style="color: var(--primary); margin-right: 10px"></i>
+              Smart Checklist KP
+            </h2>
+            <p style="color: var(--text-muted); margin: 0">
+              Pantau progress Kerja Praktik Anda dengan mudah tanpa harus
+              bertanya ke chatbot.
+            </p>
           </div>
-        </div>
 
-        <!-- ELIGIBILITY VIEW -->
-        <div
-          id="eligibility-view-container"
-          style="
+          <div class="glass-panel checklist-progress-card">
+            <h3>📈 Progress Kerja Praktik</h3>
+
+            <div class="progress-wrapper">
+              <div id="progress-fill"></div>
+            </div>
+
+            <p id="progress-text">0% Selesai</p>
+
+            <div class="next-step-box">
+              <strong>Langkah Selanjutnya:</strong>
+              <span id="next-step-text"> Belum ada progress </span>
+            </div>
+
+            <button id="reset-checklist" class="reset-btn">
+              Reset Progress
+            </button>
+          </div>
+
+          <div id="checklist-container" class="checklist-items-container"></div>
+        </div>
+      </div>
+
+      <!-- ELIGIBILITY VIEW -->
+      <div id="eligibility-view-container" style="
             display: none;
             flex-direction: column;
             height: 100%;
             width: 100%;
-          "
-        >
-          <!-- Header -->
-          <div class="chat-header glass-panel">
-            <button class="mobile-toggle open-sidebar-btn">
-              <i class="fa-solid fa-bars"></i>
-            </button>
-            <h2>Cek Kelayakan KP</h2>
-            <button
-              id="close-eligibility-btn"
-              style="
+          ">
+        <!-- Header -->
+        <div class="chat-header glass-panel">
+          <button class="mobile-toggle open-sidebar-btn">
+            <i class="fa-solid fa-bars"></i>
+          </button>
+          <h2>Cek Kelayakan KP</h2>
+          <button id="close-eligibility-btn" style="
                 background: none;
                 border: none;
                 font-size: 1.5rem;
@@ -251,74 +206,48 @@
                 display: flex;
                 align-items: center;
                 justify-content: center;
-              "
-            >
-              <i class="fa-solid fa-times"></i>
-            </button>
-          </div>
+              ">
+            <i class="fa-solid fa-times"></i>
+          </button>
+        </div>
 
-          <!-- Content Area -->
-          <div style="flex: 1; overflow-y: auto; padding: 2rem">
-            <div
-              class="glass-panel"
-              style="
+        <!-- Content Area -->
+        <div style="flex: 1; overflow-y: auto; padding: 2rem">
+          <div class="glass-panel" style="
                 border-radius: 15px;
                 padding: 1.5rem 2rem;
                 margin-bottom: 2rem;
-              "
-            >
-              <h2
-                style="
+              ">
+            <h2 style="
                   font-size: 1.8rem;
                   margin-bottom: 0.5rem;
                   color: var(--text-main);
-                "
-              >
-                <i
-                  class="fa-solid fa-user-check"
-                  style="color: var(--primary); margin-right: 10px"
-                ></i>
-                Cek Kelayakan KP
-              </h2>
-              <p style="color: var(--text-muted); margin: 0">
-                Cari tahu apakah Anda sudah memenuhi syarat untuk mendaftar
-                Kerja Praktik.
-              </p>
-            </div>
+                ">
+              <i class="fa-solid fa-user-check" style="color: var(--primary); margin-right: 10px"></i>
+              Cek Kelayakan KP
+            </h2>
+            <p style="color: var(--text-muted); margin: 0">
+              Cari tahu apakah Anda sudah memenuhi syarat untuk mendaftar
+              Kerja Praktik.
+            </p>
+          </div>
 
-            <div
-              class="glass-panel eligibility-form-container"
-              style="
+          <div class="glass-panel eligibility-form-container" style="
                 border-radius: 15px;
                 padding: 2rem;
                 text-align: left;
                 max-width: 600px;
                 width: 100%;
                 margin: 0 auto;
-              "
-            >
-              <form
-                id="form-cek-kelayakan"
-                style="display: flex; flex-direction: column; gap: 1.5rem"
-              >
-                <div
-                  class="form-group"
-                  style="display: flex; flex-direction: column; gap: 0.5rem"
-                >
-                  <label
-                    for="input-sks"
-                    style="
+              ">
+            <form id="form-cek-kelayakan" style="display: flex; flex-direction: column; gap: 1.5rem">
+              <div class="form-group" style="display: flex; flex-direction: column; gap: 0.5rem">
+                <label for="input-sks" style="
                       color: var(--text-main);
                       font-weight: 500;
                       font-size: 0.95rem;
-                    "
-                    >Jumlah SKS Lulus</label
-                  >
-                  <input
-                    type="number"
-                    id="input-sks"
-                    placeholder="Contoh: 90"
-                    style="
+                    ">Jumlah SKS Lulus</label>
+                <input type="number" id="input-sks" placeholder="Contoh: 90" style="
                       padding: 0.8rem 1rem;
                       border-radius: 8px;
                       border: 1px solid var(--border-color, #ccc);
@@ -328,29 +257,16 @@
                       font-family: inherit;
                       width: 100%;
                       box-sizing: border-box;
-                    "
-                  />
-                </div>
+                    " />
+              </div>
 
-                <div
-                  class="form-group"
-                  style="display: flex; flex-direction: column; gap: 0.5rem"
-                >
-                  <label
-                    for="input-ipk"
-                    style="
+              <div class="form-group" style="display: flex; flex-direction: column; gap: 0.5rem">
+                <label for="input-ipk" style="
                       color: var(--text-main);
                       font-weight: 500;
                       font-size: 0.95rem;
-                    "
-                    >IPK Saat Ini</label
-                  >
-                  <input
-                    type="number"
-                    step="0.01"
-                    id="input-ipk"
-                    placeholder="Contoh: 3.50"
-                    style="
+                    ">IPK Saat Ini</label>
+                <input type="number" step="0.01" id="input-ipk" placeholder="Contoh: 3.50" style="
                       padding: 0.8rem 1rem;
                       border-radius: 8px;
                       border: 1px solid var(--border-color, #ccc);
@@ -360,26 +276,16 @@
                       font-family: inherit;
                       width: 100%;
                       box-sizing: border-box;
-                    "
-                  />
-                </div>
+                    " />
+              </div>
 
-                <div
-                  class="form-group"
-                  style="display: flex; flex-direction: column; gap: 0.5rem"
-                >
-                  <label
-                    for="input-status"
-                    style="
+              <div class="form-group" style="display: flex; flex-direction: column; gap: 0.5rem">
+                <label for="input-status" style="
                       color: var(--text-main);
                       font-weight: 500;
                       font-size: 0.95rem;
-                    "
-                    >Status Akademik</label
-                  >
-                  <select
-                    id="input-status"
-                    style="
+                    ">Status Akademik</label>
+                <select id="input-status" style="
                       padding: 0.8rem 1rem;
                       border-radius: 8px;
                       border: 1px solid var(--border-color, #ccc);
@@ -390,31 +296,21 @@
                       width: 100%;
                       box-sizing: border-box;
                       cursor: pointer;
-                    "
-                  >
-                    <option value="" disabled selected>Pilih status...</option>
-                    <option value="aktif">Aktif</option>
-                    <option value="cuti">Cuti</option>
-                    <option value="mangkir">Mangkir</option>
-                  </select>
-                </div>
+                    ">
+                  <option value="" disabled selected>Pilih status...</option>
+                  <option value="aktif">Aktif</option>
+                  <option value="cuti">Cuti</option>
+                  <option value="mangkir">Mangkir</option>
+                </select>
+              </div>
 
-                <div
-                  class="form-group"
-                  style="display: flex; flex-direction: column; gap: 0.5rem"
-                >
-                  <label
-                    for="input-prasyarat"
-                    style="
+              <div class="form-group" style="display: flex; flex-direction: column; gap: 0.5rem">
+                <label for="input-prasyarat" style="
                       color: var(--text-main);
                       font-weight: 500;
                       font-size: 0.95rem;
-                    "
-                    >Matkul Prasyarat KP</label
-                  >
-                  <select
-                    id="input-prasyarat"
-                    style="
+                    ">Matkul Prasyarat KP</label>
+                <select id="input-prasyarat" style="
                       padding: 0.8rem 1rem;
                       border-radius: 8px;
                       border: 1px solid var(--border-color, #ccc);
@@ -425,21 +321,16 @@
                       width: 100%;
                       box-sizing: border-box;
                       cursor: pointer;
-                    "
-                  >
-                    <option value="" disabled selected>Pilih...</option>
-                    <option value="sudah">Sudah Lulus</option>
-                    <option value="belum">Belum Lulus</option>
-                    <option value="sedang">Sedang Mengambil</option>
-                  </select>
-                </div>
-                <div id="tempat-hasil"></div>
-                <button
-                  type="button"
-                  id="btn-cek-kelayakan"
-                  class="btn btn-primary"
-                  onclick="tampilkanHasilKelayakan()"
-                  style="
+                    ">
+                  <option value="" disabled selected>Pilih...</option>
+                  <option value="sudah">Sudah Lulus</option>
+                  <option value="belum">Belum Lulus</option>
+                  <option value="sedang">Sedang Mengambil</option>
+                </select>
+              </div>
+              <div id="tempat-hasil"></div>
+              <button type="button" id="btn-cek-kelayakan" class="btn btn-primary" onclick="tampilkanHasilKelayakan()"
+                style="
                     margin-top: 1rem;
                     padding: 1rem;
                     background-color: #ef4444;
@@ -454,25 +345,20 @@
                     justify-content: center;
                     gap: 0.5rem;
                     transition: background-color 0.3s ease;
-                  "
-                >
-                  <i class="fa-solid fa-clipboard-check"></i> Cek Kelayakan Saya
-                </button>
-              </form>
-            </div>
+                  ">
+                <i class="fa-solid fa-clipboard-check"></i> Cek Kelayakan Saya
+              </button>
+            </form>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
+    </main>
+  </div>
 
-    <!-- Scripts -->
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
-    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-    <script src="chatbot.js"></script>
+  <!-- Scripts -->
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="chatbot.js"></script>
 </body>
-</html>
-    <script src="chatbot.js"></script>
-  </body>
+
 </html>

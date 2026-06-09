@@ -1,7 +1,7 @@
 const path = require("path");
 
 require("dotenv").config({
-    path: path.resolve(__dirname, "../.env")
+  path: path.resolve(__dirname, "../.env")
 });
 
 
@@ -10,25 +10,34 @@ const express = require("express");
 const cors = require("cors");
 const Groq = require("groq-sdk");
 const documents = require("./documents");
-const { extractAndChunk } = require("./embedder");
-const { storeChunks, retrieve } = require("./retriever");
+const {
+  extractAndChunk
+} = require("./embedder");
+const {
+  storeChunks,
+  retrieve
+} = require("./retriever");
 const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
-const { OAuth2Client } = require("google-auth-library");
+const {
+  OAuth2Client
+} = require("google-auth-library");
 const db = require("./database");
 
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const JWT_SECRET = process.env.JWT_SECRET;
 
 const app = express();
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY
+});
 
 app.use(cors());
 app.use(express.json());
 
 app.use(
-    "/documents",
-    express.static(path.join(__dirname, "data"))
+  "/documents",
+  express.static(path.join(__dirname, "data"))
 );
 
 app.use(express.static(path.join(__dirname, "..")));
@@ -42,16 +51,20 @@ async function init() {
 
 // Middleware untuk verifikasi token JWT
 function authenticateToken(req, res, next) {
-    const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1];
-    
-    if (token == null) return res.status(401).json({ error: "Akses ditolak. Silakan login." });
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (token == null) return res.status(401).json({
+    error: "Akses ditolak. Silakan login."
+  });
 
   jwt.verify(token, JWT_SECRET, (err, user) => {
     if (err)
       return res
         .status(403)
-        .json({ error: "Sesi tidak valid atau telah berakhir." });
+        .json({
+          error: "Sesi tidak valid atau telah berakhir."
+        });
     req.user = user;
     next();
   });
@@ -59,59 +72,101 @@ function authenticateToken(req, res, next) {
 
 // Endpoint: Register
 app.post("/api/auth/register", async (req, res) => {
-    try {
-        const { username, email, password } = req.body;
-        if (!username || !email || !password) {
-            return res.status(400).json({ error: "Username, email, dan password wajib diisi." });
-        }
-        
-        const hashedPassword = await bcrypt.hash(password, 10);
-        
-        const query = `INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)`;
-        db.run(query, [username, email, hashedPassword], function(err) {
-            if (err) {
-                if (err.message.includes("UNIQUE constraint failed")) {
-                    return res.status(400).json({ error: "Username atau email sudah terdaftar." });
-                }
-                return res.status(500).json({ error: "Terjadi kesalahan pada database." });
-            }
-            res.status(201).json({ message: "Registrasi berhasil! Silakan login." });
-        });
-    } catch (error) {
-        res.status(500).json({ error: "Terjadi kesalahan pada server." });
+  try {
+    const {
+      username,
+      email,
+      password
+    } = req.body;
+    if (!username || !email || !password) {
+      return res.status(400).json({
+        error: "Username, email, dan password wajib diisi."
+      });
     }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    const query = `INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)`;
+    db.run(query, [username, email, hashedPassword], function (err) {
+      if (err) {
+        if (err.message.includes("UNIQUE constraint failed")) {
+          return res.status(400).json({
+            error: "Username atau email sudah terdaftar."
+          });
+        }
+        return res.status(500).json({
+          error: "Terjadi kesalahan pada database."
+        });
+      }
+      res.status(201).json({
+        message: "Registrasi berhasil! Silakan login."
+      });
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: "Terjadi kesalahan pada server."
+    });
+  }
 });
 
 // Endpoint: Login
 app.post("/api/auth/login", (req, res) => {
-    const { identifier, password } = req.body; // identifier bisa email atau username
-    
-    if (!identifier || !password) {
-        return res.status(400).json({ error: "Username/Email dan password wajib diisi." });
-    }
-    
-    const query = `SELECT * FROM users WHERE email = ? OR username = ?`;
-    db.get(query, [identifier, identifier], async (err, user) => {
-        if (err) return res.status(500).json({ error: "Terjadi kesalahan pada database." });
-        
-        if (!user || !user.password_hash) {
-            return res.status(401).json({ error: "Username/Email atau password salah." });
-        }
-        
-        const match = await bcrypt.compare(password, user.password_hash);
-        if (!match) {
-            return res.status(401).json({ error: "Username/Email atau password salah." });
-        }
-        
-        const token = jwt.sign({ id: user.id, username: user.username, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
-        res.json({ message: "Login berhasil!", token, user: { username: user.username, email: user.email } });
+  const {
+    identifier,
+    password
+  } = req.body; // identifier bisa email atau username
+
+  if (!identifier || !password) {
+    return res.status(400).json({
+      error: "Username/Email dan password wajib diisi."
     });
+  }
+
+  const query = `SELECT * FROM users WHERE email = ? OR username = ?`;
+  db.get(query, [identifier, identifier], async (err, user) => {
+    if (err) return res.status(500).json({
+      error: "Terjadi kesalahan pada database."
+    });
+
+    if (!user || !user.password_hash) {
+      return res.status(401).json({
+        error: "Username/Email atau password salah."
+      });
+    }
+
+    const match = await bcrypt.compare(password, user.password_hash);
+    if (!match) {
+      return res.status(401).json({
+        error: "Username/Email atau password salah."
+      });
+    }
+
+    const token = jwt.sign({
+      id: user.id,
+      username: user.username,
+      email: user.email
+    }, JWT_SECRET, {
+      expiresIn: '24h'
+    });
+    res.json({
+      message: "Login berhasil!",
+      token,
+      user: {
+        username: user.username,
+        email: user.email
+      }
+    });
+  });
 });
 
 // Endpoint: Google Login
 app.post("/api/auth/google", async (req, res) => {
-  const { token } = req.body;
-  if (!token) return res.status(400).json({ error: "Token tidak ditemukan." });
+  const {
+    token
+  } = req.body;
+  if (!token) return res.status(400).json({
+    error: "Token tidak ditemukan."
+  });
 
   try {
     const ticket = await googleClient.verifyIdToken({
@@ -131,29 +186,61 @@ app.post("/api/auth/google", async (req, res) => {
         if (err)
           return res
             .status(500)
-            .json({ error: "Terjadi kesalahan pada database." });
+            .json({
+              error: "Terjadi kesalahan pada database."
+            });
 
-            if (user) {
-                // Update google_id jika belum ada tapi email sama
-                if (!user.google_id) {
-                    db.run(`UPDATE users SET google_id = ? WHERE id = ?`, [googleId, user.id]);
-                }
-                const jwtToken = jwt.sign({ id: user.id, username: user.username, email: user.email }, JWT_SECRET, { expiresIn: '24h' });
-                return res.json({ message: "Login berhasil!", token: jwtToken, user: { username: user.username, email: user.email } });
-            } else {
-                // Buat user baru
-                db.run(`INSERT INTO users (username, email, google_id) VALUES (?, ?, ?)`, [username, email, googleId], function(err) {
-                    if (err) return res.status(500).json({ error: "Gagal membuat user baru dari Google." });
-                    
-                    const jwtToken = jwt.sign({ id: this.lastID, username, email }, JWT_SECRET, { expiresIn: '24h' });
-                    res.json({ message: "Login berhasil!", token: jwtToken, user: { username, email } });
-                });
+        if (user) {
+          // Update google_id jika belum ada tapi email sama
+          if (!user.google_id) {
+            db.run(`UPDATE users SET google_id = ? WHERE id = ?`, [googleId, user.id]);
+          }
+          const jwtToken = jwt.sign({
+            id: user.id,
+            username: user.username,
+            email: user.email
+          }, JWT_SECRET, {
+            expiresIn: '24h'
+          });
+          return res.json({
+            message: "Login berhasil!",
+            token: jwtToken,
+            user: {
+              username: user.username,
+              email: user.email
             }
-        });
-    } catch (error) {
-        console.error("Google Auth Error:", error);
-        res.status(401).json({ error: "Token Google tidak valid." });
-    }
+          });
+        } else {
+          // Buat user baru
+          db.run(`INSERT INTO users (username, email, google_id) VALUES (?, ?, ?)`, [username, email, googleId], function (err) {
+            if (err) return res.status(500).json({
+              error: "Gagal membuat user baru dari Google."
+            });
+
+            const jwtToken = jwt.sign({
+              id: this.lastID,
+              username,
+              email
+            }, JWT_SECRET, {
+              expiresIn: '24h'
+            });
+            res.json({
+              message: "Login berhasil!",
+              token: jwtToken,
+              user: {
+                username,
+                email
+              }
+            });
+          });
+        }
+      });
+  } catch (error) {
+    console.error("Google Auth Error:", error);
+    res.status(401).json({
+      error: "Token Google tidak valid."
+    });
+  }
 });
 
 // Endpoint: Get all conversations for logged in user
@@ -164,7 +251,9 @@ app.get("/api/chat/conversations", authenticateToken, (req, res) => {
     [userId],
     (err, rows) => {
       if (err)
-        return res.status(500).json({ error: "Gagal mengambil riwayat." });
+        return res.status(500).json({
+          error: "Gagal mengambil riwayat."
+        });
       res.json(rows);
     },
   );
@@ -180,15 +269,17 @@ app.get(
 
     // Pastikan conversation milik user ini
     db.get(`SELECT * FROM conversations WHERE id = ? AND user_id = ?`, [conversationId, userId], (err, conv) => {
-        if (err || !conv) return res.status(404).json({ error: "Percakapan tidak ditemukan." });
-        
-        db.all(`SELECT * FROM messages WHERE conversation_id = ? ORDER BY id ASC`, [conversationId], (err, rows) => {
-            if (err) return res.status(500).json({ error: "Gagal mengambil pesan." });
-            res.json(rows);
-          },
-        );
-      },
-    );
+      if (err || !conv) return res.status(404).json({
+        error: "Percakapan tidak ditemukan."
+      });
+
+      db.all(`SELECT * FROM messages WHERE conversation_id = ? ORDER BY id ASC`, [conversationId], (err, rows) => {
+        if (err) return res.status(500).json({
+          error: "Gagal mengambil pesan."
+        });
+        res.json(rows);
+      }, );
+    }, );
   },
 );
 
@@ -203,7 +294,9 @@ app.delete("/api/chat/conversations/:id", authenticateToken, (req, res) => {
     [conversationId, userId],
     (err, conv) => {
       if (err || !conv)
-        return res.status(404).json({ error: "Percakapan tidak ditemukan." });
+        return res.status(404).json({
+          error: "Percakapan tidak ditemukan."
+        });
 
       // Hapus messages terlebih dahulu (foreign key constraint)
       db.run(
@@ -211,7 +304,9 @@ app.delete("/api/chat/conversations/:id", authenticateToken, (req, res) => {
         [conversationId],
         (err) => {
           if (err)
-            return res.status(500).json({ error: "Gagal menghapus pesan." });
+            return res.status(500).json({
+              error: "Gagal menghapus pesan."
+            });
 
           // Hapus conversation
           db.run(
@@ -221,8 +316,12 @@ app.delete("/api/chat/conversations/:id", authenticateToken, (req, res) => {
               if (err)
                 return res
                   .status(500)
-                  .json({ error: "Gagal menghapus percakapan." });
-              res.json({ message: "Percakapan berhasil dihapus." });
+                  .json({
+                    error: "Gagal menghapus percakapan."
+                  });
+              res.json({
+                message: "Percakapan berhasil dihapus."
+              });
             },
           );
         },
@@ -232,60 +331,94 @@ app.delete("/api/chat/conversations/:id", authenticateToken, (req, res) => {
 });
 
 // Endpoint: Get checklist
+// Mengambil data checklist untuk user yang sedang login dari database SQLite
 app.get("/api/checklist", authenticateToken, (req, res) => {
   const userId = req.user.id;
   db.all(
     `SELECT task_id, is_completed FROM user_checklists WHERE user_id = ?`,
     [userId],
     (err, rows) => {
-      if (err)
+      if (err) {
         return res
           .status(500)
-          .json({ error: "Gagal mengambil data checklist." });
+          .json({
+            error: "Gagal mengambil data checklist."
+          });
+      }
       res.json(rows);
     },
   );
 });
 
 // Endpoint: Update checklist
+// Menyimpan atau memperbarui status kelayakan suatu tugas/subtask di database (SQLite upsert)
 app.post("/api/checklist", authenticateToken, (req, res) => {
-    const userId = req.user.id;
-    const { taskId, isCompleted } = req.body;
-    
-    // SQLite upsert
-    const query = `
-        INSERT INTO user_checklists (user_id, task_id, is_completed) 
-        VALUES (?, ?, ?)
-        ON CONFLICT(user_id, task_id) 
-        DO UPDATE SET is_completed = excluded.is_completed
-    `;
+  const userId = req.user.id;
+  const {
+    taskId,
+    isCompleted
+  } = req.body;
+
+  const query = `
+    INSERT INTO user_checklists (user_id, task_id, is_completed) 
+    VALUES (?, ?, ?)
+    ON CONFLICT(user_id, task_id) 
+    DO UPDATE SET is_completed = excluded.is_completed
+  `;
+
   db.run(query, [userId, taskId, isCompleted], (err) => {
-    if (err)
-      return res.status(500).json({ error: "Gagal menyimpan checklist." });
-    res.json({ message: "Checklist diperbarui." });
+    if (err) {
+      return res.status(500).json({
+        error: "Gagal menyimpan checklist."
+      });
+    }
+    res.json({
+      message: "Checklist diperbarui."
+    });
+  });
+});
+
+// Endpoint: Reset checklist
+// Menghapus seluruh data progres checklist milik user yang sedang login
+app.delete("/api/checklist", authenticateToken, (req, res) => {
+  const userId = req.user.id;
+  db.run(`DELETE FROM user_checklists WHERE user_id = ?`, [userId], (err) => {
+    if (err) {
+      return res.status(500).json({
+        error: "Gagal menghapus data checklist."
+      });
+    }
+    res.json({
+      message: "Checklist berhasil direset."
+    });
   });
 });
 
 // Endpoint chat
 app.post("/chat", authenticateToken, async (req, res) => {
   try {
-    let { message, conversationId } = req.body;
+    let {
+      message,
+      conversationId
+    } = req.body;
     const userId = req.user.id;
 
     if (!message) {
-      return res.status(400).json({ error: "Pesan tidak boleh kosong." });
+      return res.status(400).json({
+        error: "Pesan tidak boleh kosong."
+      });
     }
 
-        // 1. Buat percakapan baru jika conversationId kosong
-        if (!conversationId) {
-            const title = message.split(' ').slice(0, 5).join(' ') + (message.length > 20 ? '...' : '');
-            conversationId = await new Promise((resolve, reject) => {
-                db.run(`INSERT INTO conversations (user_id, title) VALUES (?, ?)`, [userId, title], function(err) {
-                    if (err) reject(err);
-                    else resolve(this.lastID);
-                });
-            });
-        }
+    // 1. Buat percakapan baru jika conversationId kosong
+    if (!conversationId) {
+      const title = message.split(' ').slice(0, 5).join(' ') + (message.length > 20 ? '...' : '');
+      conversationId = await new Promise((resolve, reject) => {
+        db.run(`INSERT INTO conversations (user_id, title) VALUES (?, ?)`, [userId, title], function (err) {
+          if (err) reject(err);
+          else resolve(this.lastID);
+        });
+      });
+    }
 
     // 2. Simpan pesan user
     await new Promise((resolve, reject) => {
@@ -309,8 +442,7 @@ app.post("/chat", authenticateToken, async (req, res) => {
       const context = relevantChunks.join("\n\n");
       const completion = await groq.chat.completions.create({
         model: "llama-3.1-8b-instant",
-        messages: [
-          {
+        messages: [{
             role: "system",
             content: `Kamu adalah asisten informasi Kerja Praktik (KP) Telkom University Surabaya. 
 Jawab pertanyaan mahasiswa berdasarkan konteks dokumen pedoman KP berikut.
@@ -324,7 +456,10 @@ Aturan penting:
 Konteks:
 ${context}`,
           },
-          { role: "user", content: message },
+          {
+            role: "user",
+            content: message
+          },
         ],
         temperature: 0.3,
         max_tokens: 512,
@@ -332,28 +467,28 @@ ${context}`,
       reply = completion.choices[0].message.content;
     }
 
-        // Cek jika user meminta dokumen
-        const lowerMessage = message.toLowerCase();
+    // Cek jika user meminta dokumen
+    const lowerMessage = message.toLowerCase();
 
-        let matchedDoc = null;
-        for (const doc of documents) {
-            if (doc.keywords.some(k => lowerMessage.includes(k))) {
-                matchedDoc = doc;
-                break;
-            }
-        }
+    let matchedDoc = null;
+    for (const doc of documents) {
+      if (doc.keywords.some(k => lowerMessage.includes(k))) {
+        matchedDoc = doc;
+        break;
+      }
+    }
 
-        if (matchedDoc) {
-            if (matchedDoc.type === "pdf") {
-                reply += `\n\n[ATTACHMENT:${matchedDoc.name}.pdf|${matchedDoc.url}]`;
-            } else {
-                reply += `\n\n[LINK:${matchedDoc.name}|${matchedDoc.url}]`;
-            }
-        } else if (lowerMessage.includes("dokumen") || lowerMessage.includes("form") || lowerMessage.includes("template")) {
-            // User meminta dokumen tapi tidak spesifik
-            const optionsList = documents.map(d => d.name).join(',');
-            reply += `\n\n[OPTIONS:${optionsList}]`;
-        }
+    if (matchedDoc) {
+      if (matchedDoc.type === "pdf") {
+        reply += `\n\n[ATTACHMENT:${matchedDoc.name}.pdf|${matchedDoc.url}]`;
+      } else {
+        reply += `\n\n[LINK:${matchedDoc.name}|${matchedDoc.url}]`;
+      }
+    } else if (lowerMessage.includes("dokumen") || lowerMessage.includes("form") || lowerMessage.includes("template")) {
+      // User meminta dokumen tapi tidak spesifik
+      const optionsList = documents.map(d => d.name).join(',');
+      reply += `\n\n[OPTIONS:${optionsList}]`;
+    }
 
     // 3. Simpan pesan bot
     await new Promise((resolve, reject) => {
@@ -367,17 +502,27 @@ ${context}`,
       );
     });
 
-    res.json({ reply, conversationId });
+    res.json({
+      reply,
+      conversationId
+    });
   } catch (error) {
     console.error("Error:", error.message);
-    res.status(500).json({ error: "Terjadi kesalahan pada server." });
+    res.status(500).json({
+      error: "Terjadi kesalahan pada server."
+    });
   }
 });
 
 // --- ENDPOINT CEK KELAYAKAN KP ---
-app.post("/api/eligibility/check", (req, res) => {
+app.post("/api/eligibility/check", authenticateToken, (req, res) => {
   // 1. Ambil data yang dikirim dari frontend
-  const { sks, ipk, status, prasyarat } = req.body;
+  const {
+    sks,
+    ipk,
+    status,
+    prasyarat
+  } = req.body;
 
   // 2. Validasi jika ada data yang kosong atau tidak dikirim
   if (!sks || !ipk || !status || !prasyarat) {
