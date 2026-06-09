@@ -1,69 +1,87 @@
 const documents = [
   {
-    keywords: ["pedoman kp", "buku pedoman", "panduan kp"],
-    title: "Buku Pedoman KP",
-    type: "pdf"
+    id: "pedoman",
+    name: "Buku Pedoman KP",
+    type: "pdf",
+    url: "/documents/Pedoman%20KP.pdf",
+    keywords: ["pedoman", "panduan", "buku pedoman", "file pedoman kp", "buku pedoman kp", "pedoman kp"]
   },
-
   {
-    keywords: ["pengajuan kp", "daftar kp", "pendaftaran kp"],
-    title: "Form Pengajuan KP",
-    link: "https://tr.ee/76sa3BDGPg"
+    id: "pengajuan",
+    name: "Form Pengajuan KP",
+    type: "link",
+    url: "https://tr.ee/76sa3BDGPg",
+    keywords: ["pengajuan kp", "daftar kp", "pendaftaran kp"]
   },
-
   {
-    keywords: ["logbook", "logbook kp"],
-    title: "Logbook KP",
-    link: "https://simka.telkomuniversity.ac.id/log-book"
+    id: "logbook",
+    name: "Logbook KP",
+    type: "link",
+    url: "https://simka.telkomuniversity.ac.id/log-book",
+    keywords: ["logbook", "jurnal", "logbook kp"]
   },
-
   {
-    keywords: ["laporan bulanan"],
-    title: "Template Laporan Bulanan",
-    link: "https://tel-u.ac.id/templapbulananinternship"
+    id: "laporan-bulanan",
+    name: "Template Laporan Bulanan",
+    type: "link",
+    url: "https://tel-u.ac.id/templapbulananinternship",
+    keywords: ["laporan bulanan", "template laporan bulanan"]
   },
-
   {
-    keywords: ["template penilaian", "dokumen penilaian"],
-    title: "Template Penilaian",
-    link: "https://tel-u.ac.id/templatedokumenpenilaian-plps-eksternal-"
+    id: "penilaian",
+    name: "Template Penilaian",
+    type: "link",
+    url: "https://tel-u.ac.id/templatedokumenpenilaian-plps-eksternal-",
+    keywords: ["penilaian", "form nilai", "template penilaian", "dokumen penilaian"]
   },
-
   {
-    keywords: ["upload laporan", "laporan akhir", "pengumpulan laporan"],
-    title: "Pengumpulan Dokumen Akhir",
-    link: "https://tel-u.ac.id/unggahnilaimagangberdampak2526genap"
+    id: "upload",
+    name: "Pengumpulan Dokumen Akhir",
+    type: "link",
+    url: "https://tel-u.ac.id/unggahnilaimagangberdampak2526genap",
+    keywords: ["upload laporan", "pengumpulan laporan akhir", "pengumpulan laporan", "form laporan akhir"]
   },
-
-    {
-    keywords: ["tutorial toss", "surat pengantar kp", "pengajuan surat pengantar", "toss"],
-    title: "Tutorial Pengajuan Surat Pengantar KP",
-    link: "https://tr.ee/hxbw-Z9sk5"
-  },
-
   {
-    keywords: ["open library", "pengumpulan laporan open library", "tutorial open library"],
-    title: "Tutorial Pengumpulan Laporan KP ke Open Library",
-    link: "https://tr.ee/DYykmokP-M"
+    id: "laporan-akhir",
+    name: "Template Laporan Akhir",
+    type: "link",
+    url: "https://tel-u.ac.id/template-lapakhir-fp",
+    keywords: ["laporan akhir", "template laporan akhir", "format laporan akhir", "laporan kp akhir", "template lapakhir"]
   },
-
   {
-    keywords: ["surat penerimaan kp", "surat penolakan kp", "penerimaan atau penolakan kp"],
-    title: "Surat Penerimaan atau Penolakan KP",
-    link: "https://tr.ee/7W0ukd6Jc3"
+    id: "tutorial-toss",
+    name: "Tutorial Pengajuan Surat Pengantar KP",
+    type: "link",
+    url: "https://tr.ee/hxbw-Z9sk5",
+    keywords: ["tutorial toss", "surat pengantar kp", "pengajuan surat pengantar", "toss"]
   },
-
   {
-    keywords: ["surat keterangan kp", "telah melaksanakan kp", "surat selesai kp"],
-    title: "Surat Keterangan Telah Melaksanakan KP",
-    link: "https://tr.ee/w1wZ-a-rr0"
+    id: "open-library",
+    name: "Tutorial Pengumpulan Laporan KP ke Open Library",
+    type: "link",
+    url: "https://tr.ee/DYykmokP-M",
+    keywords: ["open library", "tutorial open library", "pengumpulan laporan open library"]
   },
-
   {
-    keywords: ["template proposal kp", "proposal kerja praktik", "proposal kp"],
-    title: "Template Proposal Kerja Praktik",
-    link: "https://tr.ee/pnvu6KWUCo"
+    id: "surat-penerimaan",
+    name: "Surat Penerimaan atau Penolakan KP",
+    type: "link",
+    url: "https://tr.ee/7W0ukd6Jc3",
+    keywords: ["surat penerimaan kp", "surat penolakan kp", "penerimaan atau penolakan kp"]
+  },
+  {
+    id: "surat-keterangan",
+    name: "Surat Keterangan Telah Melaksanakan KP",
+    type: "link",
+    url: "https://tr.ee/w1wZ-a-rr0",
+    keywords: ["surat keterangan kp", "surat selesai kp", "telah melaksanakan kp"]
+  },
+  {
+    id: "proposal-kp",
+    name: "Template Proposal Kerja Praktik",
+    type: "link",
+    url: "https://tr.ee/pnvu6KWUCo",
+    keywords: ["template proposal kp", "proposal kerja praktik", "proposal kp"]
   }
 ];
-
 module.exports = documents;
