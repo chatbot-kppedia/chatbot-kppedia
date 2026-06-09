@@ -344,6 +344,67 @@ ${context}`,
                     "template lapakhir"
                 ]/*  */
             },
+
+            {
+                id: "tutorial-toss",
+                type: "link",
+                name: "Tutorial Pengajuan Surat Pengantar KP",
+                url: "https://tr.ee/hxbw-Z9sk5",
+                keywords: [
+                    "tutorial toss",
+                    "surat pengantar kp",
+                    "pengajuan surat pengantar",
+                    "toss"
+                ]
+            },
+
+            {
+                id: "open-library",
+                type: "link",
+                name: "Tutorial Pengumpulan Laporan KP ke Open Library",
+                url: "https://tr.ee/DYykmokP-M",
+                keywords: [
+                    "open library",
+                    "tutorial open library",
+                    "pengumpulan laporan open library"
+                ]
+            },
+
+            {
+                id: "surat-penerimaan",
+                type: "link",
+                name: "Surat Penerimaan atau Penolakan KP",
+                url: "https://tr.ee/7W0ukd6Jc3",
+                keywords: [
+                    "surat penerimaan kp",
+                    "surat penolakan kp",
+                    "penerimaan atau penolakan kp"
+                ]
+            },
+
+            {
+                id: "surat-keterangan",
+                type: "link",
+                name: "Surat Keterangan Telah Melaksanakan KP",
+                url: "https://tr.ee/w1wZ-a-rr0",
+                keywords: [
+                    "surat keterangan kp",
+                    "surat selesai kp",
+                    "telah melaksanakan kp"
+                ]
+            },
+
+            {
+                id: "proposal-kp",
+                type: "link",
+                name: "Template Proposal Kerja Praktik",
+                url: "https://tr.ee/pnvu6KWUCo",
+                keywords: [
+                    "template proposal kp",
+                    "proposal kerja praktik",
+                    "proposal kp"
+                ]
+            },
         ];
 
         let matchedDoc = null;
@@ -351,11 +412,11 @@ ${context}`,
         console.log("Pesan user:", lowerMessage);
 
         for (const doc of DOCUMENTS) {
-            console.log("Cek dokumen:", doc.name);
+            console.log("Cek dokumen:", doc.title);
 
             if (doc.keywords.some(k => lowerMessage.includes(k))) {
                 matchedDoc = doc;
-                console.log("MATCH DITEMUKAN:", doc.name);
+                console.log("MATCH DITEMUKAN:", doc.title);
                 break;
             }
         }
