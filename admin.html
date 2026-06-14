@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="id">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard - KPedia</title>
+
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+    rel="stylesheet" />
+
+  <!-- Font Awesome Icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
+
+  <!-- Custom CSS -->
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* Admin specific styles */
+    .admin-container {
+        padding: 2rem;
+        width: 100%;
+        overflow-y: auto;
+    }
+    
+    .admin-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 1rem;
+        background: var(--bg-card);
+        border-radius: 10px;
+        overflow: hidden;
+    }
+    
+    .admin-table th, .admin-table td {
+        padding: 1rem;
+        text-align: left;
+        border-bottom: 1px solid var(--border-light);
+    }
+    
+    .admin-table th {
+        background: rgba(0,0,0,0.05);
+        font-weight: 600;
+        color: var(--text-main);
+    }
+    
+    [data-theme='dark'] .admin-table th {
+        background: rgba(255,255,255,0.05);
+    }
+
+    .admin-action-btn {
+        padding: 0.5rem 1rem;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-right: 0.5rem;
+        font-weight: 500;
+    }
+    
+    .btn-edit { background: #ffbd2e; color: #fff; }
+    .btn-delete { background: #ff5f56; color: #fff; }
+    
+    .admin-form-group {
+        margin-bottom: 1rem;
+    }
+    .admin-form-group label {
+        display: block;
+        margin-bottom: 0.5rem;
+        font-weight: 500;
+    }
+    .admin-form-group input, .admin-form-group textarea, .admin-form-group select {
+        width: 100%;
+        padding: 0.8rem;
+        border-radius: 8px;
+        border: 1px solid var(--border-light);
+        background: var(--bg-card);
+        color: var(--text-main);
+    }
+  </style>
+</head>
+
+<body class="chatbot-page">
+  <div class="chatbot-container">
+    <!-- Sidebar -->
+    <aside class="chat-sidebar glass-panel" id="chat-sidebar">
+      <div class="sidebar-header">
+        <a href="index.html" class="logo">
+          <i class="fa-solid fa-robot"></i>
+          <span>Admin KPedia</span>
+        </a>
+      </div>
+
+      <div class="sidebar-nav" style="margin-top: 2rem;">
+        <a href="#" class="sidebar-link active" id="nav-documents">
+          <i class="fa-solid fa-file-pdf"></i> Dokumen Chatbot
+        </a>
+        <a href="#" class="sidebar-link" id="nav-checklists">
+          <i class="fa-solid fa-list-check"></i> Smart Checklist
+        </a>
+        <a href="#" class="sidebar-link" id="nav-eligibility">
+          <i class="fa-solid fa-user-check"></i> Cek Kelayakan
+        </a>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="user-profile-small" id="user-profile-display">
+          <!-- User info injected here -->
+        </div>
+        <button class="btn btn-secondary logout-btn-small" id="admin-logout-btn">
+          <i class="fa-solid fa-sign-out-alt"></i> Logout
+        </button>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="chat-main" style="background: var(--bg-dark);">
+      <!-- Background Glow -->
+      <div class="bg-glow bg-glow-1" style="z-index: -1"></div>
+      
+      <div class="chat-header glass-panel">
+          <h2 id="page-title">Manajemen Dokumen</h2>
+          <button id="theme-toggle" class="theme-btn" aria-label="Toggle dark mode">
+            <i class="fa-solid fa-moon"></i>
+          </button>
+      </div>
+
+      <div class="admin-container" id="main-content">
+          <!-- Dynamic Content Rendered Here by admin.js -->
+      </div>
+    </main>
+  </div>
+
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

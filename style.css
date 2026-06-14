@@ -1895,7 +1895,7 @@ ul {
   box-shadow: 0 0 0 2px rgba(229, 9, 20, 0.2);
 }
 
-.form-control option {
+select option {
   background: var(--bg-dark);
   color: var(--text-main);
 }
@@ -1943,7 +1943,7 @@ ul {
 .chatbot-page {
   height: 100vh;
   overflow: hidden;
-  background: var(--bg-main);
+  background: var(--bg-dark);
 }
 
 .chatbot-container {
