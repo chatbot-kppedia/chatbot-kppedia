@@ -25,6 +25,7 @@
     "google-auth-library": "^10.7.0",
     "groq-sdk": "^1.2.1",
     "jsonwebtoken": "^9.0.3",
+    "multer": "^2.1.1",
     "natural": "^8.1.1",
     "pdfjs-dist": "^6.0.227",
     "sqlite3": "^6.0.1"

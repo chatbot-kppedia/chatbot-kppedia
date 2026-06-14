@@ -66,7 +66,11 @@ loginForm.addEventListener("submit", async (e) => {
             // Save token and redirect
             localStorage.setItem("kppedia_token", data.token);
             localStorage.setItem("kppedia_user", JSON.stringify(data.user));
-            window.location.href = "chatbot.html";
+            if (data.user.role === 'admin') {
+                window.location.href = "admin.html";
+            } else {
+                window.location.href = "chatbot.html";
+            }
         } else {
             loginError.textContent = data.error || "Gagal masuk.";
         }
@@ -129,7 +133,11 @@ async function handleGoogleCredentialResponse(response) {
         if (res.ok) {
             localStorage.setItem("kppedia_token", data.token);
             localStorage.setItem("kppedia_user", JSON.stringify(data.user));
-            window.location.href = "chatbot.html";
+            if (data.user.role === 'admin') {
+                window.location.href = "admin.html";
+            } else {
+                window.location.href = "chatbot.html";
+            }
         } else {
             loginError.textContent = data.error || "Gagal login dengan Google.";
         }

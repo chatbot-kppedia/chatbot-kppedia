@@ -99,22 +99,34 @@ document.addEventListener("DOMContentLoaded", () => {
     eligibilityViewContainer.style.display = "none";
   }
 
-  function showChecklistView() {
+  async function showChecklistView() {
     hideAllViews();
     checklistViewContainer.style.display = "flex";
     if (window.innerWidth <= 768 && chatSidebar)
       chatSidebar.classList.remove("active");
+    await fetchChecklistMaster();
     loadChecklists();
     syncChecklistFromBackend().then(() => {
       loadChecklists();
     });
   }
 
-  function showEligibilityView() {
+  async function showEligibilityView() {
     hideAllViews();
     eligibilityViewContainer.style.display = "flex";
     if (window.innerWidth <= 768 && chatSidebar)
       chatSidebar.classList.remove("active");
+      
+    try {
+      const res = await fetch("/api/eligibility/criteria", { headers: { Authorization: `Bearer ${token}` }});
+      if (res.ok) {
+        const criteria = await res.json();
+        document.getElementById("input-sks").placeholder = `Contoh: ${criteria.min_sks}`;
+        document.getElementById("input-ipk").placeholder = `Contoh: ${criteria.min_ipk.toFixed(2)}`;
+      }
+    } catch(e) {
+      console.error("Gagal mengambil kriteria kelayakan", e);
+    }
   }
 
   function showChatView() {
@@ -428,72 +440,19 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   // --- Smart Checklist Logic ---
-  const checklistStages = [{
-      title: "Verifikasi Syarat Kerja Praktik",
-      description: "Pastikan telah lulus minimal 90 SKS dan memenuhi syarat KP.",
-    },
-    {
-      title: "Pencarian Instansi & Konsultasi Dosen Pembimbing Akademik",
-      description: "Mencari perusahaan tujuan dan berdiskusi dengan Dosen Pembimbing Akademik.",
-    },
-    {
-      title: "Penyusunan Proposal Kerja Praktik",
-      description: "Menyusun proposal sesuai format pedoman KP.",
-    },
-    {
-      title: "Pengajuan Permohonan Kerja Praktik",
-      description: "Mengisi formulir pengajuan KP dan mengunggah proposal.",
-    },
-    {
-      title: "Pengajuan Surat Pengantar TOSS",
-      description: "Mengajukan surat pengantar KP melalui TOSS.",
-    },
-    {
-      title: "Pengiriman Proposal ke Instansi",
-      description: "Mengirim surat pengantar dan proposal ke perusahaan tujuan.",
-    },
-    {
-      title: "Penerimaan dari Instansi",
-      description: "Menerima surat penerimaan dari perusahaan atau instansi.",
-    },
-    {
-      title: "Pelaksanaan Kerja Praktik",
-      description: "Melaksanakan KP sesuai jadwal, minimal 6 minggu.",
-      subTasks: [
-        "Pelaksanaan Tugas KP sesuai Rencana dan Arahan Pembimbing Lapangan",
-        "Mengumpulkan Data dan Informasi terkait Tugas KP",
-        "Dokumentasi Kegiatan KP",
+  let checklistStages = [];
 
-        "Bimbingan DPA 1",
-        "Bimbingan DPA 2",
-        "Bimbingan DPA 3",
-        "Bimbingan DPA 4",
-
-        "Bimbingan Lapangan 1",
-        "Bimbingan Lapangan 2",
-        "Bimbingan Lapangan 3",
-        "Bimbingan Lapangan 4",
-
-        "Menyelesaikan Tugas dari Pembimbing Lapangan",
-        "Penyampaian Hasil KP ke Perusahaan",
-        "Penilaian Perusahaan Diterima",
-
-        "Selesai KP",
-      ],
-    },
-    {
-      title: "Penyusunan Laporan Kerja Praktik",
-      description: "Menyusun laporan akhir berdasarkan hasil KP.",
-    },
-    {
-      title: "Presentasi Hasil Kerja Praktik",
-      description: "Melakukan presentasi hasil KP kepada dosen pembimbing.",
-    },
-    {
-      title: "Pengumpulan Laporan Akhir",
-      description: "Mengunggah laporan ke OpenLib dan mengisi formulir pengumpulan.",
-    },
-  ];
+  async function fetchChecklistMaster() {
+    if (checklistStages.length > 0) return;
+    try {
+      const res = await fetch("/api/checklists/master", { headers: { Authorization: `Bearer ${token}` }});
+      if (res.ok) {
+        checklistStages = await res.json();
+      }
+    } catch(e) {
+      console.error("Gagal load checklist master", e);
+    }
+  }
 
   function getSubtaskData() {
     return JSON.parse(localStorage.getItem("kp-subtasks")) || {};
@@ -738,48 +697,44 @@ document.addEventListener("DOMContentLoaded", () => {
    * @returns {void}
    */
   function checkPelaksanaanKP() {
-    const pelaksanaanIndex = 7;
-
     const subtaskData = getSubtaskData();
-
-    const totalSubtasks = checklistStages[pelaksanaanIndex].subTasks.length;
-
-    const completedSubtasks = subtaskData[pelaksanaanIndex] || [];
-
     let completed = JSON.parse(localStorage.getItem("kp-checklist")) || [];
+    let anyChanged = false;
 
-    const allDone = completedSubtasks.length === totalSubtasks;
-    let statusChanged = false;
-
-    if (allDone) {
-      if (!completed.includes(pelaksanaanIndex)) {
-        completed.push(pelaksanaanIndex);
-        statusChanged = true;
+    checklistStages.forEach((stage, index) => {
+      if (stage.subTasks && stage.subTasks.length > 0) {
+        const totalSubtasks = stage.subTasks.length;
+        const completedSubtasks = subtaskData[index] || [];
+        const allDone = completedSubtasks.length === totalSubtasks;
+        
+        if (allDone) {
+          if (!completed.includes(index)) {
+            completed.push(index);
+            anyChanged = true;
+            syncStageCompletion(index, 1);
+          }
+        } else {
+          if (completed.includes(index)) {
+            completed = completed.filter((i) => i !== index);
+            anyChanged = true;
+            syncStageCompletion(index, 0);
+          }
+        }
       }
-    } else {
-      if (completed.includes(pelaksanaanIndex)) {
-        completed = completed.filter((i) => i !== pelaksanaanIndex);
-        statusChanged = true;
-      }
+    });
+
+    if (anyChanged) {
+      localStorage.setItem("kp-checklist", JSON.stringify(completed));
+      loadChecklists();
     }
+  }
 
-    localStorage.setItem("kp-checklist", JSON.stringify(completed));
-
-    loadChecklists();
-
-    if (statusChanged) {
-      fetch("/api/checklist", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          taskId: `stage_${pelaksanaanIndex}`,
-          isCompleted: allDone ? 1 : 0
-        })
-      }).catch((err) => console.error("Gagal menyimpan status parent stage ke backend:", err));
-    }
+  function syncStageCompletion(index, isCompleted) {
+    fetch("/api/checklist", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ taskId: `stage_${index}`, isCompleted })
+    }).catch(console.error);
   }
 
   //update progress bar
@@ -906,25 +861,9 @@ document.addEventListener("DOMContentLoaded", () => {
         tempatHasil.style.fontWeight = "600";
         tempatHasil.style.textAlign = "center";
 
-        // 6. Tampilkan Hasil menggunakan SweetAlert2
-        if (isEligible) {
-          Swal.fire({
-            icon: "success",
-            title: "Memenuhi Syarat!",
-            text: pesanHasil,
-            confirmButtonColor: "#10b981",
-          });
-        } else {
-          Swal.fire({
-            icon: "error",
-            title: "Belum Memenuhi Syarat",
-            text: pesanHasil,
-            confirmButtonColor: "#ef4444",
-          });
-        }
 
         // Tampilkan pesannya
-        tempatHasil.innerText = pesanHasil;
+        tempatHasil.innerHTML = pesanHasil;
       } else {
         throw new Error(result.message || "Gagal melakukan pengecekan.");
       }
