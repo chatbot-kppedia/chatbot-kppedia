@@ -45,8 +45,8 @@
         <a href="#" class="sidebar-link" id="nav-checklist-btn">
           <i class="fa-solid fa-list-check"></i> Smart Checklist
         </a>
-        <a href="#" class="sidebar-link" id="nav-eligibility-btn">
-          <i class="fa-solid fa-user-check"></i> Cek Kelayakan
+        <a href="#" class="sidebar-link" id="nav-profile-btn">
+          <i class="fa-solid fa-user"></i> Profil Mahasiswa
         </a>
         <a href="index.html" class="sidebar-link">
           <i class="fa-solid fa-house"></i> Kembali ke Beranda
@@ -184,8 +184,8 @@
         </div>
       </div>
 
-      <!-- ELIGIBILITY VIEW -->
-      <div id="eligibility-view-container" style="
+      <!-- PROFILE VIEW -->
+      <div id="profile-view-container" style="
             display: none;
             flex-direction: column;
             height: 100%;
@@ -196,8 +196,8 @@
           <button class="mobile-toggle open-sidebar-btn">
             <i class="fa-solid fa-bars"></i>
           </button>
-          <h2>Cek Kelayakan KP</h2>
-          <button id="close-eligibility-btn" style="
+          <h2>Profil Mahasiswa</h2>
+          <button id="close-profile-btn" style="
                 background: none;
                 border: none;
                 font-size: 1.5rem;
@@ -212,7 +212,7 @@
         </div>
 
         <!-- Content Area -->
-        <div style="flex: 1; overflow-y: auto; padding: 2rem">
+        <div class="profile-content-area">
           <div class="glass-panel" style="
                 border-radius: 15px;
                 padding: 1.5rem 2rem;
@@ -223,136 +223,175 @@
                   margin-bottom: 0.5rem;
                   color: var(--text-main);
                 ">
-              <i class="fa-solid fa-user-check" style="color: var(--primary); margin-right: 10px"></i>
-              Cek Kelayakan KP
+              <i class="fa-solid fa-user" style="color: var(--primary); margin-right: 10px"></i>
+              Profil Mahasiswa
             </h2>
             <p style="color: var(--text-muted); margin: 0">
-              Cari tahu apakah Anda sudah memenuhi syarat untuk mendaftar
-              Kerja Praktik.
+              Data kelayakan dan informasi tambahan diri Anda.
             </p>
           </div>
 
-          <div class="glass-panel eligibility-form-container" style="
-                border-radius: 15px;
-                padding: 2rem;
-                text-align: left;
-                max-width: 600px;
-                width: 100%;
-                margin: 0 auto;
-              ">
-            <form id="form-cek-kelayakan" style="display: flex; flex-direction: column; gap: 1.5rem">
-              <div class="form-group" style="display: flex; flex-direction: column; gap: 0.5rem">
-                <label for="input-sks" style="
-                      color: var(--text-main);
-                      font-weight: 500;
-                      font-size: 0.95rem;
-                    ">Jumlah SKS Lulus</label>
-                <input type="number" id="input-sks" placeholder="Contoh: 90" style="
-                      padding: 0.8rem 1rem;
-                      border-radius: 8px;
-                      border: 1px solid var(--border-light);
-                      background-color: var(--bg-card);
-                      color: var(--text-main);
-                      outline: none;
-                      font-family: inherit;
-                      width: 100%;
-                      box-sizing: border-box;
-                    " />
+          <div class="profile-grid">
+            <!-- Data Kelayakan (Readonly) -->
+            <div class="glass-panel" style="border-radius: 15px; padding: 2rem; position: relative;">
+              <h3 style="margin-bottom: 1.5rem; color: var(--text-main);"><i class="fa-solid fa-clipboard-check"></i>
+                Status Kelayakan</h3>
+              <div style="margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between;">
+                <div>
+                  <strong>Status:</strong> <span id="profile-status-badge"
+                    style="padding: 0.2rem 0.5rem; background: var(--primary); color: white; border-radius: 5px; font-size: 0.85rem;">Layak</span>
+                </div>
+                <button type="button" id="btn-reverify-profile" class="btn btn-primary"
+                  style="display: none; padding: 0.5rem 1rem; font-size: 0.85rem; border-radius: 5px; cursor: pointer;"><i
+                    class="fa-solid fa-check"></i> Verifikasi Sekarang</button>
+              </div>
+              <p id="profile-status-desc" style="color: var(--text-muted); font-size: 0.9rem;">
+                Anda telah menyelesaikan Cek Kelayakan awal. Syarat SKS dan IPK terpenuhi.
+              </p>
+            </div>
+
+            <!-- Form Tambahan (Bisa Edit) -->
+            <div class="glass-panel" style="border-radius: 15px; padding: 2rem;">
+              <h3 style="margin-bottom: 1.5rem; color: var(--text-main);"><i class="fa-solid fa-address-card"></i>
+                Informasi Tambahan</h3>
+              
+              <!-- Pratinjau Foto Profil -->
+              <div style="display: flex; justify-content: center; margin-bottom: 1.5rem;">
+                <img id="profile-img-preview" src="" alt="Foto Profil" 
+                  style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--primary); display: none;">
+                <div id="profile-img-placeholder" style="width: 100px; height: 100px; border-radius: 50%; background: var(--border-light); display: flex; align-items: center; justify-content: center; font-size: 2.5rem; color: var(--text-muted);">
+                  <i class="fa-solid fa-user"></i>
+                </div>
               </div>
 
-              <div class="form-group" style="display: flex; flex-direction: column; gap: 0.5rem">
-                <label for="input-ipk" style="
-                      color: var(--text-main);
-                      font-weight: 500;
-                      font-size: 0.95rem;
-                    ">IPK Saat Ini</label>
-                <input type="number" step="0.01" id="input-ipk" placeholder="Contoh: 3.50" style="
-                      padding: 0.8rem 1rem;
-                      border-radius: 8px;
-                      border: 1px solid var(--border-light);
-                      background-color: var(--bg-card);
-                      color: var(--text-main);
-                      outline: none;
-                      font-family: inherit;
-                      width: 100%;
-                      box-sizing: border-box;
-                    " />
-              </div>
-
-              <div class="form-group" style="display: flex; flex-direction: column; gap: 0.5rem">
-                <label for="input-status" style="
-                      color: var(--text-main);
-                      font-weight: 500;
-                      font-size: 0.95rem;
-                    ">Status Akademik</label>
-                <select id="input-status" style="
-                      padding: 0.8rem 1rem;
-                      border-radius: 8px;
-                      border: 1px solid var(--border-light);
-                      background-color: var(--bg-card);
-                      color: var(--text-main);
-                      outline: none;
-                      font-family: inherit;
-                      width: 100%;
-                      box-sizing: border-box;
-                      cursor: pointer;
-                    ">
-                  <option value="" disabled selected>Pilih status...</option>
-                  <option value="aktif">Aktif</option>
-                  <option value="cuti">Cuti</option>
-                  <option value="mangkir">Mangkir</option>
-                </select>
-              </div>
-
-              <div class="form-group" style="display: flex; flex-direction: column; gap: 0.5rem">
-                <label for="input-prasyarat" style="
-                      color: var(--text-main);
-                      font-weight: 500;
-                      font-size: 0.95rem;
-                    ">Matkul Prasyarat KP</label>
-                <select id="input-prasyarat" style="
-                      padding: 0.8rem 1rem;
-                      border-radius: 8px;
-                      border: 1px solid var(--border-light);
-                      background-color: var(--bg-card);
-                      color: var(--text-main);
-                      outline: none;
-                      font-family: inherit;
-                      width: 100%;
-                      box-sizing: border-box;
-                      cursor: pointer;
-                    ">
-                  <option value="" disabled selected>Pilih...</option>
-                  <option value="sudah">Sudah Lulus</option>
-                  <option value="belum">Belum Lulus</option>
-                  <option value="sedang">Sedang Mengambil</option>
-                </select>
-              </div>
-              <div id="tempat-hasil"></div>
-              <button type="button" id="btn-cek-kelayakan" class="btn btn-primary" onclick="tampilkanHasilKelayakan()"
-                style="
-                    margin-top: 1rem;
-                    padding: 1rem;
-                    background-color: #ef4444;
-                    color: white;
-                    border: none;
-                    border-radius: 8px;
-                    font-weight: 600;
-                    font-size: 1rem;
-                    cursor: pointer;
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    gap: 0.5rem;
-                    transition: background-color 0.3s ease;
-                  ">
-                <i class="fa-solid fa-clipboard-check"></i> Cek Kelayakan Saya
-              </button>
-            </form>
+              <form id="profile-update-form" style="display: flex; flex-direction: column; gap: 1rem;">
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                  <label for="profile-kelas"
+                    style="color: var(--text-main); font-weight: 500; font-size: 0.95rem;">Kelas</label>
+                  <input type="text" id="profile-kelas" placeholder="Contoh: SE-45-01"
+                    style="padding: 0.8rem; border-radius: 8px; border: 1px solid var(--border-light); background: var(--bg-card); color: var(--text-main); outline: none;">
+                </div>
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                  <label for="profile-alamat"
+                    style="color: var(--text-main); font-weight: 500; font-size: 0.95rem;">Alamat Domisili</label>
+                  <input type="text" id="profile-alamat" placeholder="Contoh: Jl. Ketintang No. 156"
+                    style="padding: 0.8rem; border-radius: 8px; border: 1px solid var(--border-light); background: var(--bg-card); color: var(--text-main); outline: none;">
+                </div>
+                <div class="form-group" style="display: flex; flex-direction: column; gap: 0.5rem;">
+                  <label for="profile-foto" style="color: var(--text-main); font-weight: 500; font-size: 0.95rem;">Upload Foto Profil</label>
+                  <input type="file" id="profile-foto" accept="image/*"
+                    style="padding: 0.8rem; border-radius: 8px; border: 1px solid var(--border-light); background: var(--bg-card); color: var(--text-main); outline: none;">
+                </div>
+                <button type="submit" class="btn btn-primary" style="margin-top: 0.5rem;">Simpan Perubahan</button>
+              </form>
+            </div>
           </div>
         </div>
       </div>
     </main>
+  </div>
+
+  <!-- ONBOARDING MODAL -->
+  <div id="onboarding-modal" style="
+      display: none; 
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+      background: rgba(0, 0, 0, 0.4); z-index: 9999; 
+      align-items: center; justify-content: center; backdrop-filter: blur(8px);">
+    <div class="glass-panel"
+      style="width: 90%; max-width: 500px; padding: 2.5rem 2rem; border-radius: 15px; position: relative;">
+
+      <button type="button" id="close-onboarding-btn" style="
+          position: absolute; top: 1rem; right: 1rem;
+          background: none; border: none; font-size: 1.5rem; color: var(--text-main); cursor: pointer;
+      "><i class="fa-solid fa-times"></i></button>
+
+      <div style="text-align: center; margin-bottom: 1.5rem;">
+        <h2 style="color: var(--text-main); margin-bottom: 0.5rem;">Selamat Datang di KPedia!</h2>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">Sebelum mulai, yuk pastikan kamu memenuhi syarat
+          akademik untuk mendaftar Kerja Praktik.</p>
+      </div>
+
+      <form id="onboarding-form" style="display: flex; flex-direction: column; gap: 1.2rem;">
+        <div class="form-group" style="display: flex; flex-direction: column; gap: 0.5rem">
+          <label for="ob-sks" style="color: var(--text-main); font-weight: 500; font-size: 0.95rem;">Jumlah SKS
+            Lulus</label>
+          <input type="number" id="ob-sks" required
+            style="padding: 0.8rem; border-radius: 8px; border: 1px solid var(--border-light); background-color: var(--bg-card); color: var(--text-main); outline: none;" />
+        </div>
+        <div class="form-group" style="display: flex; flex-direction: column; gap: 0.5rem">
+          <label for="ob-ipk" style="color: var(--text-main); font-weight: 500; font-size: 0.95rem;">IPK Saat
+            Ini</label>
+          <input type="number" step="0.01" id="ob-ipk" required
+            style="padding: 0.8rem; border-radius: 8px; border: 1px solid var(--border-light); background-color: var(--bg-card); color: var(--text-main); outline: none;" />
+        </div>
+        <div class="form-group" style="display: flex; flex-direction: column; gap: 0.5rem">
+          <label for="ob-status" style="color: var(--text-main); font-weight: 500; font-size: 0.95rem;">Status
+            Akademik</label>
+          <select id="ob-status" required
+            style="padding: 0.8rem; border-radius: 8px; border: 1px solid var(--border-light); background-color: var(--bg-card); color: var(--text-main); outline: none;">
+            <option value="" disabled selected>Pilih status...</option>
+            <option value="aktif">Aktif</option>
+            <option value="cuti">Cuti</option>
+            <option value="mangkir">Mangkir</option>
+          </select>
+        </div>
+        <div class="form-group" style="display: flex; flex-direction: column; gap: 0.5rem">
+          <label for="ob-prasyarat" style="color: var(--text-main); font-weight: 500; font-size: 0.95rem;">Matkul
+            Prasyarat KP</label>
+          <select id="ob-prasyarat" required
+            style="padding: 0.8rem; border-radius: 8px; border: 1px solid var(--border-light); background-color: var(--bg-card); color: var(--text-main); outline: none;">
+            <option value="" disabled selected>Pilih...</option>
+            <option value="sudah">Sudah Lulus</option>
+            <option value="belum">Belum Lulus</option>
+            <option value="sedang">Sedang Mengambil</option>
+          </select>
+        </div>
+
+        <div id="ob-error" style="color: #ef4444; font-size: 0.85rem; text-align: center; display: none;"></div>
+
+        <div style="display: flex; gap: 1rem; margin-top: 0.5rem;">
+          <button type="button" id="skip-onboarding-btn" class="btn"
+            style="flex: 1; padding: 1rem; font-weight: bold; background: var(--bg-card); border: 1px solid var(--border-light); color: var(--text-main); cursor: pointer; border-radius: 8px;">Lewati</button>
+          <button type="submit" class="btn btn-primary"
+            style="flex: 1; padding: 1rem; font-weight: bold; border-radius: 8px;">Verifikasi</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- UPLOAD MODAL -->
+  <div id="upload-modal" style="
+      display: none; 
+      position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+      background: rgba(0, 0, 0, 0.4); z-index: 9999; 
+      align-items: center; justify-content: center; backdrop-filter: blur(8px);">
+    <div class="glass-panel"
+      style="width: 90%; max-width: 400px; padding: 2.5rem 2rem; border-radius: 15px; position: relative;">
+
+      <button type="button" id="close-upload-btn" style="
+          position: absolute; top: 1rem; right: 1rem;
+          background: none; border: none; font-size: 1.5rem; color: var(--text-main); cursor: pointer;
+      "><i class="fa-solid fa-times"></i></button>
+
+      <div style="text-align: center; margin-bottom: 1.5rem;">
+        <h3 style="color: var(--text-main); margin-bottom: 0.5rem;" id="upload-modal-title">Unggah Bukti</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;" id="upload-modal-desc">Silakan unggah dokumen bukti (PDF) untuk tahap ini.</p>
+      </div>
+
+      <form id="upload-form" style="display: flex; flex-direction: column; gap: 1.2rem;">
+        <input type="hidden" id="upload-task-id" />
+        <div class="form-group" style="display: flex; flex-direction: column; gap: 0.5rem">
+          <label for="upload-file" style="color: var(--text-main); font-weight: 500; font-size: 0.95rem;">File Dokumen</label>
+          <input type="file" id="upload-file" accept="application/pdf,image/*" required
+            style="padding: 0.8rem; border-radius: 8px; border: 1px solid var(--border-light); background-color: var(--bg-card); color: var(--text-main); outline: none;" />
+        </div>
+        
+        <div id="upload-error" style="color: #ef4444; font-size: 0.85rem; text-align: center; display: none;"></div>
+
+        <button type="submit" class="btn btn-primary" id="upload-submit-btn"
+          style="margin-top: 0.5rem; padding: 1rem; width: 100%; font-weight: bold; border-radius: 8px;">Unggah Dokumen</button>
+      </form>
+    </div>
   </div>
 
   <!-- Scripts -->

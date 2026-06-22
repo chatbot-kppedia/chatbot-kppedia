@@ -3,10 +3,11 @@ const token = jwt.sign({id: 1, username: 'admin', role: 'admin'}, 'super_secret_
 
 async function testPut() {
     const payload = {
+        id: 'sample',
         name: 'Sample Proposal Pengajuan KP',
         type: 'pdf',
         url: '/documents/file-1781419108098.pdf',
-        keywords: 'sample, pengajuan kp, sample proposal pengajuan kp'.split(',').map(k=>k.trim())
+        keywords: 'sample, pengajuan kp, sample proposal pengajuan kp'.split(',').map(k=>k.trim()).join(',')
     };
 
     const res = await fetch('http://localhost:3000/api/admin/documents/sample', {

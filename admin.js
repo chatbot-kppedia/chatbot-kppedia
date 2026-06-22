@@ -49,6 +49,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const navDocs = document.getElementById("nav-documents");
     const navChecklists = document.getElementById("nav-checklists");
     const navEligibility = document.getElementById("nav-eligibility");
+    const navSubmissions = document.getElementById("nav-submissions");
     const pageTitle = document.getElementById("page-title");
     const mainContent = document.getElementById("main-content");
   
@@ -66,6 +67,13 @@ document.addEventListener("DOMContentLoaded", () => {
         renderChecklists();
     });
 
+    navSubmissions.addEventListener("click", (e) => {
+        e.preventDefault();
+        setActiveNav(navSubmissions);
+        pageTitle.innerText = "Verifikasi Berkas Mahasiswa";
+        renderSubmissions();
+    });
+
     navEligibility.addEventListener("click", (e) => {
         e.preventDefault();
         setActiveNav(navEligibility);
@@ -74,7 +82,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
 
     function setActiveNav(navEl) {
-        [navDocs, navChecklists, navEligibility].forEach(el => el.classList.remove('active'));
+        [navDocs, navChecklists, navEligibility, navSubmissions].forEach(el => el.classList.remove('active'));
         navEl.classList.add('active');
     }
 
@@ -109,8 +117,10 @@ document.addEventListener("DOMContentLoaded", () => {
                         <td>${doc.url}</td>
                         <td>${doc.keywords.join(", ")}</td>
                         <td>
-                            <button class="admin-action-btn btn-edit" onclick='editDocument(${JSON.stringify(doc).replace(/'/g, "&apos;")})'><i class="fa-solid fa-edit"></i></button>
-                            <button class="admin-action-btn btn-delete" onclick="deleteDocument('${doc.id}')"><i class="fa-solid fa-trash"></i></button>
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: nowrap;">
+                                <button class="admin-action-btn btn-edit" style="margin: 0;" onclick='editDocument(${JSON.stringify(doc).replace(/'/g, "&apos;")})'><i class="fa-solid fa-edit"></i></button>
+                                <button class="admin-action-btn btn-delete" style="margin: 0;" onclick="deleteDocument('${doc.id}')"><i class="fa-solid fa-trash"></i></button>
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -280,8 +290,10 @@ document.addEventListener("DOMContentLoaded", () => {
                         <td>${cl.description || '-'}</td>
                         <td>${subs ? "- " + subs : "<em>Tidak ada</em>"}</td>
                         <td>
-                            <button class="admin-action-btn btn-edit" onclick='editChecklist(${JSON.stringify(cl).replace(/'/g, "&apos;")})'><i class="fa-solid fa-edit"></i></button>
-                            <button class="admin-action-btn btn-delete" onclick="deleteChecklist(${cl.id})"><i class="fa-solid fa-trash"></i></button>
+                            <div style="display: flex; gap: 0.5rem; flex-wrap: nowrap;">
+                                <button class="admin-action-btn btn-edit" style="margin: 0;" onclick='editChecklist(${JSON.stringify(cl).replace(/'/g, "&apos;")})'><i class="fa-solid fa-edit"></i></button>
+                                <button class="admin-action-btn btn-delete" style="margin: 0;" onclick="deleteChecklist(${cl.id})"><i class="fa-solid fa-trash"></i></button>
+                            </div>
                         </td>
                     </tr>
                 `;
@@ -439,6 +451,132 @@ document.addEventListener("DOMContentLoaded", () => {
             mainContent.innerHTML = '<p>Error memuat data.</p>';
         }
     }
+
+    // --- SUBMISSIONS LOGIC ---
+    async function renderSubmissions() {
+        mainContent.innerHTML = '<p>Memuat data...</p>';
+        try {
+            const res = await fetch("/api/admin/submissions", { headers: { Authorization: `Bearer ${token}` } });
+            const submissions = await res.json();
+
+            let html = `
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Waktu</th>
+                            <th>Mahasiswa</th>
+                            <th>Tahap</th>
+                            <th>Berkas</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            if (submissions.length === 0) {
+                html += `<tr><td colspan="6" style="text-align: center;">Belum ada pengajuan berkas.</td></tr>`;
+            }
+
+            submissions.forEach(sub => {
+                const date = new Date(sub.created_at).toLocaleString('id-ID');
+                
+                let statusBadge = '';
+                if (sub.status === 'pending') statusBadge = '<span style="color: #f59e0b; font-weight: bold;"><i class="fa-solid fa-clock"></i> Pending</span>';
+                else if (sub.status === 'approved') statusBadge = '<span style="color: #10b981; font-weight: bold;"><i class="fa-solid fa-check-circle"></i> Disetujui</span>';
+                else if (sub.status === 'rejected') statusBadge = '<span style="color: #ef4444; font-weight: bold;"><i class="fa-solid fa-times-circle"></i> Ditolak</span>';
+                
+                let actionBtns = '';
+                if (sub.status === 'pending') {
+                    actionBtns = `
+                        <div style="display: flex; gap: 0.5rem; flex-wrap: nowrap;">
+                            <button class="btn" style="background:#10b981; color:white; padding: 0.3rem 0.6rem; font-size:0.8rem; border-radius:5px; border:none; cursor:pointer;" onclick="approveSubmission(${sub.id})">Setujui</button>
+                            <button class="btn" style="background:#ef4444; color:white; padding: 0.3rem 0.6rem; font-size:0.8rem; border-radius:5px; border:none; cursor:pointer;" onclick="rejectSubmission(${sub.id})">Tolak</button>
+                        </div>
+                    `;
+                }
+
+                html += `
+                    <tr>
+                        <td>${date}</td>
+                        <td>
+                            <strong>${sub.user_name}</strong><br>
+                            <small>${sub.user_email}</small>
+                        </td>
+                        <td>${sub.task_id.replace('stage_', 'Tahap ')}</td>
+                        <td><a href="${sub.file_url}" target="_blank" style="color: var(--primary); text-decoration:underline;">Lihat PDF</a></td>
+                        <td>
+                            ${statusBadge}
+                            ${sub.status === 'rejected' ? `<br><small style="color:var(--text-muted)">Alasan: ${sub.admin_feedback}</small>` : ''}
+                        </td>
+                        <td>${actionBtns}</td>
+                    </tr>
+                `;
+            });
+            html += `</tbody></table>`;
+            mainContent.innerHTML = html;
+        } catch (e) {
+            mainContent.innerHTML = '<p>Error memuat data pengajuan.</p>';
+        }
+    }
+
+    window.approveSubmission = async (id) => {
+        if (!confirm("Setujui berkas ini? Mahasiswa akan otomatis lolos tahap tersebut.")) return;
+        try {
+            const res = await fetch(`/api/admin/submissions/${id}/approve`, {
+                method: 'PUT',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            if (res.ok) {
+                Swal.fire('Berhasil', 'Berkas disetujui', 'success');
+                renderSubmissions();
+            } else {
+                const data = await res.json();
+                Swal.fire('Gagal', data.error, 'error');
+            }
+        } catch (e) {
+            Swal.fire('Error', 'Kesalahan koneksi', 'error');
+        }
+    };
+
+    window.rejectSubmission = async (id) => {
+        const { value: feedback } = await Swal.fire({
+            title: 'Tolak Berkas',
+            input: 'textarea',
+            inputLabel: 'Alasan Penolakan',
+            inputPlaceholder: 'Tulis alasan kenapa berkas ditolak...',
+            inputAttributes: {
+                'aria-label': 'Tulis alasan penolakan'
+            },
+            showCancelButton: true,
+            confirmButtonText: 'Tolak Berkas',
+            cancelButtonText: 'Batal',
+            inputValidator: (value) => {
+                if (!value) {
+                    return 'Alasan penolakan wajib diisi!'
+                }
+            }
+        });
+
+        if (feedback) {
+            try {
+                const res = await fetch(`/api/admin/submissions/${id}/reject`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+                    body: JSON.stringify({ feedback })
+                });
+                if (res.ok) {
+                    Swal.fire('Ditolak', 'Berkas ditolak dan mahasiswa telah dinotifikasi', 'success');
+                    renderSubmissions();
+                } else {
+                    const data = await res.json();
+                    Swal.fire('Gagal', data.error, 'error');
+                }
+            } catch (e) {
+                Swal.fire('Error', 'Kesalahan koneksi', 'error');
+            }
+        }
+    };
 
     // Default open
     navDocs.click();

@@ -1,28 +1,25 @@
-const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
-
-const dbPath = path.join(__dirname, 'backend', 'users.db');
-const db = new sqlite3.Database(dbPath);
+const db = require('./backend/database');
 
 const checklistStages = [
   {
-    title: "Verifikasi Syarat Kerja Praktik",
+    title: "Verifikasi Syarat KP",
     description: "Pastikan telah lulus minimal 90 SKS dan memenuhi syarat KP.",
   },
   {
-    title: "Pencarian Instansi & Konsultasi Dosen Pembimbing Akademik",
+    title: "Pencarian Instansi dan Konsultasi DPA",
     description: "Mencari perusahaan tujuan dan berdiskusi dengan Dosen Pembimbing Akademik.",
   },
   {
-    title: "Penyusunan Proposal Kerja Praktik",
+    title: "Penyusunan Proposal KP",
     description: "Menyusun proposal sesuai format pedoman KP.",
   },
   {
-    title: "Pengajuan Permohonan Kerja Praktik",
+    title: "Pengajuan Permohonan KP",
     description: "Mengisi formulir pengajuan KP dan mengunggah proposal.",
   },
   {
-    title: "Pengajuan Surat Pengantar TOSS",
+    title: "Pengajuan Surat Pengantar melalui TOSS",
     description: "Mengajukan surat pengantar KP melalui TOSS.",
   },
   {
@@ -55,11 +52,11 @@ const checklistStages = [
     ],
   },
   {
-    title: "Penyusunan Laporan Kerja Praktik",
+    title: "Penyusunan Laporan KP",
     description: "Menyusun laporan akhir berdasarkan hasil KP.",
   },
   {
-    title: "Presentasi Hasil Kerja Praktik",
+    title: "Presentasi Hasil KP",
     description: "Melakukan presentasi hasil KP kepada dosen pembimbing.",
   },
   {
@@ -68,29 +65,45 @@ const checklistStages = [
   },
 ];
 
-db.serialize(() => {
-  db.run("DELETE FROM checklist_subtasks");
-  db.run("DELETE FROM checklists");
-
-  checklistStages.forEach((stage) => {
-    db.run("INSERT INTO checklists (title, description) VALUES (?, ?)", [stage.title, stage.description], function(err) {
-      if (err) return console.error(err);
-      const checklistId = this.lastID;
-      
-      if (stage.subTasks) {
-        stage.subTasks.forEach(sub => {
-          db.run("INSERT INTO checklist_subtasks (checklist_id, title) VALUES (?, ?)", [checklistId, sub]);
-        });
-      }
+const runQuery = (sql, params = []) => {
+  return new Promise((resolve, reject) => {
+    db.run(sql, params, function(err) {
+      if (err) reject(err);
+      else resolve(this);
     });
   });
-});
+};
 
-// We can't close immediately if we have async callbacks from db.run inside the loop, 
-// wait a little bit or just don't close.
-setTimeout(() => {
-  db.close((err) => {
-    if (err) console.error(err.message);
-    else console.log('Seeding checklists completed.');
-  });
-}, 2000);
+async function seed() {
+  try {
+    await runQuery("DELETE FROM checklist_subtasks");
+    await runQuery("DELETE FROM checklists");
+    try {
+      await runQuery("ALTER TABLE checklists AUTO_INCREMENT = 1");
+      await runQuery("ALTER TABLE checklist_subtasks AUTO_INCREMENT = 1");
+    } catch (e) {
+      console.error("Gagal mereset auto-increment:", e.message);
+    }
+
+    for (let idx = 0; idx < checklistStages.length; idx++) {
+      const stage = checklistStages[idx];
+      const checklistId = idx + 1;
+      await runQuery("INSERT INTO checklists (id, title, description) VALUES (?, ?, ?)", [checklistId, stage.title, stage.description]);
+      
+      if (stage.subTasks) {
+        for (const sub of stage.subTasks) {
+          await runQuery("INSERT INTO checklist_subtasks (checklist_id, title) VALUES (?, ?)", [checklistId, sub]);
+        }
+      }
+    }
+    console.log('Seeding checklists completed successfully.');
+  } catch (err) {
+    console.error('Error seeding checklists:', err);
+  } finally {
+    db.close((err) => {
+      if (err) console.error(err.message);
+    });
+  }
+}
+
+seed();

@@ -37,6 +37,52 @@ const upload = multer({
     else cb(new Error("Hanya file PDF yang diizinkan"));
   }
 });
+
+// Konfigurasi Multer untuk upload dokumen checklist
+const checklistStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = path.join(__dirname, "../uploads");
+    // Ensure the directory exists
+    const fs = require("fs");
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, "checklist-" + Date.now() + Math.floor(Math.random() * 1000) + ext);
+  }
+});
+const checklistUpload = multer({ 
+  storage: checklistStorage,
+  limits: { fileSize: 5 * 1024 * 1024 } // 5MB limit
+});
+
+// Konfigurasi Multer untuk upload foto profil
+const profileStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = path.join(__dirname, "../uploads");
+    const fs = require("fs");
+    if (!fs.existsSync(uploadPath)) {
+      fs.mkdirSync(uploadPath, { recursive: true });
+    }
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, "profile-" + Date.now() + Math.floor(Math.random() * 1000) + ext);
+  }
+});
+const profileUpload = multer({ 
+  storage: profileStorage,
+  limits: { fileSize: 2 * 1024 * 1024 }, // Limit 2MB
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith("image/")) cb(null, true);
+    else cb(new Error("Hanya file gambar yang diizinkan"));
+  }
+});
+
 const jwt = require("jsonwebtoken");
 const {
   OAuth2Client
@@ -57,6 +103,11 @@ app.use(express.json());
 app.use(
   "/documents",
   express.static(path.join(__dirname, "data"))
+);
+
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "../uploads"))
 );
 
 app.use(express.static(path.join(__dirname, "..")));
@@ -182,9 +233,11 @@ app.post("/api/auth/login", (req, res) => {
       message: "Login berhasil!",
       token,
       user: {
+        id: user.id,
         username: user.username,
         email: user.email,
-        role: user.role || 'user'
+        role: user.role || 'user',
+        is_eligible: user.is_eligible === 1
       }
     });
   });
@@ -238,8 +291,11 @@ app.post("/api/auth/google", async (req, res) => {
             message: "Login berhasil!",
             token: jwtToken,
             user: {
+              id: user.id,
               username: user.username,
-              email: user.email
+              email: user.email,
+              role: user.role || 'user',
+              is_eligible: user.is_eligible === 1
             }
           });
         } else {
@@ -261,8 +317,11 @@ app.post("/api/auth/google", async (req, res) => {
               message: "Login berhasil!",
               token: jwtToken,
               user: {
+                id: this.lastID,
                 username,
-                email
+                email,
+                role: 'user',
+                is_eligible: false
               }
             });
           });
@@ -274,6 +333,51 @@ app.post("/api/auth/google", async (req, res) => {
       error: "Token Google tidak valid."
     });
   }
+});
+
+// Endpoint: Get user profile
+app.get("/api/auth/profile", authenticateToken, (req, res) => {
+  db.get("SELECT id, username, email, role, is_eligible, alamat, kelas, foto_profil FROM users WHERE id = ?", [req.user.id], (err, user) => {
+    if (err || !user) {
+      return res.status(404).json({ error: "User tidak ditemukan." });
+    }
+    res.json({
+      id: user.id,
+      username: user.username,
+      email: user.email,
+      role: user.role || 'user',
+      is_eligible: user.is_eligible === 1,
+      alamat: user.alamat,
+      kelas: user.kelas,
+      foto_profil: user.foto_profil
+    });
+  });
+});
+
+// Endpoint: Update user profile
+app.put("/api/auth/profile", authenticateToken, (req, res) => {
+  profileUpload.single('foto_profil')(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({ error: err.message });
+    }
+    
+    const { alamat, kelas } = req.body;
+    
+    if (req.file) {
+      const foto_profil_url = `/uploads/${req.file.filename}`;
+      db.run("UPDATE users SET alamat = ?, kelas = ?, foto_profil = ? WHERE id = ?", 
+        [alamat, kelas, foto_profil_url, req.user.id], function(err) {
+          if (err) return res.status(500).json({ error: "Gagal update profil." });
+          res.json({ message: "Profil berhasil diperbarui." });
+      });
+    } else {
+      db.run("UPDATE users SET alamat = ?, kelas = ? WHERE id = ?", 
+        [alamat, kelas, req.user.id], function(err) {
+          if (err) return res.status(500).json({ error: "Gagal update profil." });
+          res.json({ message: "Profil berhasil diperbarui." });
+      });
+    }
+  });
 });
 
 // Endpoint: Get all conversations for logged in user
@@ -395,8 +499,7 @@ app.post("/api/checklist", authenticateToken, (req, res) => {
   const query = `
     INSERT INTO user_checklists (user_id, task_id, is_completed) 
     VALUES (?, ?, ?)
-    ON CONFLICT(user_id, task_id) 
-    DO UPDATE SET is_completed = excluded.is_completed
+    ON DUPLICATE KEY UPDATE is_completed = VALUES(is_completed)
   `;
 
   db.run(query, [userId, taskId, isCompleted], (err) => {
@@ -467,6 +570,22 @@ app.post("/chat", authenticateToken, async (req, res) => {
 
     const relevantChunks = retrieve(message, 3);
     let reply = "";
+    
+    // Ambil data kelayakan dan checklist untuk injeksi konteks
+    let userContext = "";
+    try {
+      const userStatus = await new Promise((resolve) => {
+        db.get("SELECT is_eligible FROM users WHERE id = ?", [userId], (err, row) => resolve(row));
+      });
+      const checklists = await new Promise((resolve) => {
+        db.all("SELECT task_id FROM user_checklists WHERE user_id = ? AND is_completed = 1", [userId], (err, rows) => resolve(rows || []));
+      });
+      const isEligibleStr = userStatus && userStatus.is_eligible ? "Sudah memenuhi syarat Kelayakan KP." : "Belum memenuhi syarat Kelayakan KP.";
+      const completedTasks = checklists.map(c => c.task_id).join(", ");
+      userContext = `\nInformasi Pengguna Saat Ini:\n- Status Kelayakan: ${isEligibleStr}\n- Progres Checklist yang sudah selesai (Task ID): ${completedTasks ? completedTasks : "Belum ada"}`;
+    } catch(e) {
+      console.error("Gagal mengambil context user", e);
+    }
 
     if (relevantChunks.length === 0) {
       reply =
@@ -479,12 +598,13 @@ app.post("/chat", authenticateToken, async (req, res) => {
             role: "system",
             content: `Kamu adalah asisten informasi Kerja Praktik (KP) Telkom University Surabaya. 
 Jawab pertanyaan mahasiswa berdasarkan konteks dokumen pedoman KP berikut.
-Jawab dengan bahasa Indonesia yang jelas dan ringkas.
+Jawab dengan bahasa Indonesia yang jelas dan profesional. Berikan arahan yang relevan dengan status pengguna.
 Aturan penting:
 - Jika informasi ADA di konteks, jawab dengan lengkap dan spesifik
 - Jika ada angka atau syarat pasti, sebutkan secara eksplisit
 - Jika informasi TIDAK ADA di konteks, katakan tidak tahu
 - Jangan jawab dengan "lihat tabel" atau "lihat gambar", jelaskan isinya langsung
+${userContext}
 
 Konteks:
 ${context}`,
@@ -570,12 +690,12 @@ app.post("/api/eligibility/check", authenticateToken, (req, res) => {
   const {
     sks,
     ipk,
-    status,
-    prasyarat
+    status_akademik,
+    status_prasyarat
   } = req.body;
 
   // 2. Validasi jika ada data yang kosong atau tidak dikirim
-  if (!sks || !ipk || !status || !prasyarat) {
+  if (sks === undefined || ipk === undefined || !status_akademik || !status_prasyarat) {
     return res.status(400).json({
       success: false,
       message: "Data tidak lengkap. Mohon isi semua bidang terlebih dahulu!",
@@ -603,11 +723,11 @@ app.post("/api/eligibility/check", authenticateToken, (req, res) => {
       isEligible = false;
       reasons.push(`IPK Anda (${parsedIpk}) di bawah ketentuan minimal (${criteria.min_ipk}).`);
     }
-    if (status !== criteria.status_required) {
+    if (status_akademik !== criteria.status_required) {
       isEligible = false;
-      reasons.push(`Status akademik Anda (${status}) tidak memenuhi syarat (harus ${criteria.status_required}).`);
+      reasons.push(`Status akademik Anda (${status_akademik}) tidak memenuhi syarat (harus ${criteria.status_required}).`);
     }
-    if (prasyarat !== criteria.prasyarat_required) {
+    if (status_prasyarat !== criteria.prasyarat_required) {
       isEligible = false;
       const praStr = criteria.prasyarat_required === 'sudah' ? 'Lulus' : 'Belum Wajib';
       reasons.push(`Anda belum memenuhi syarat kelulusan matkul prasyarat (harus Sudah ${praStr}).`);
@@ -624,12 +744,29 @@ app.post("/api/eligibility/check", authenticateToken, (req, res) => {
       pesanHasil += "</ul>";
     }
 
-    // 5. Kirim balasan ke frontend
-    res.status(200).json({
-      success: true,
-      isEligible: isEligible,
-      message: pesanHasil,
-    });
+    // 5. Jika lolos, lakukan update database is_eligible = 1 untuk user tersebut
+    if (isEligible) {
+      db.run("UPDATE users SET is_eligible = 1 WHERE id = ?", [req.user.id], (updateErr) => {
+        if (updateErr) {
+          console.error("❌ Gagal update status kelayakan user:", updateErr.message);
+          return res.status(500).json({
+            success: false,
+            message: "Terjadi kesalahan database saat memperbarui status kelayakan.",
+          });
+        }
+        res.status(200).json({
+          success: true,
+          isEligible: isEligible,
+          message: pesanHasil,
+        });
+      });
+    } else {
+      res.status(200).json({
+        success: true,
+        isEligible: isEligible,
+        message: pesanHasil,
+      });
+    }
   });
 });
 
@@ -643,7 +780,7 @@ app.get("/api/eligibility/criteria", authenticateToken, (req, res) => {
 
 // --- ENDPOINT UNTUK CHECKLISTS MASTER ---
 app.get("/api/checklists/master", authenticateToken, (req, res) => {
-  db.all("SELECT * FROM checklists", (err, checklists) => {
+  db.all("SELECT * FROM checklists ORDER BY id ASC", (err, checklists) => {
     if (err) return res.status(500).json({ error: "Gagal mengambil data." });
     db.all("SELECT * FROM checklist_subtasks", (err, subtasks) => {
       if (err) return res.status(500).json({ error: "Gagal mengambil data." });
@@ -735,9 +872,138 @@ app.delete("/api/admin/documents/:id", authenticateAdmin, (req, res) => {
   });
 });
 
+// Checklist Submissions (Hard Tasks)
+
+// Upload file untuk hard task
+app.post("/api/checklist/upload", authenticateToken, checklistUpload.single("file"), (req, res) => {
+  const user_id = req.user.id;
+  const { task_id } = req.body;
+  
+  if (!task_id) {
+    return res.status(400).json({ error: "task_id diperlukan" });
+  }
+  
+  if (!req.file) {
+    return res.status(400).json({ error: "File dokumen diperlukan" });
+  }
+
+  const file_url = "/uploads/" + req.file.filename;
+
+  // Cek apakah sudah ada pending submission untuk task ini
+  db.get("SELECT id FROM checklist_submissions WHERE user_id = ? AND task_id = ? AND status = 'pending'", [user_id, task_id], (err, row) => {
+    if (row) {
+      // Update
+      db.run("UPDATE checklist_submissions SET file_url = ?, created_at = CURRENT_TIMESTAMP WHERE id = ?", [file_url, row.id], function(err) {
+        if (err) return res.status(500).json({ error: "Gagal mengupdate pengajuan dokumen" });
+        res.json({ message: "Dokumen berhasil diunggah ulang dan sedang menunggu verifikasi.", file_url: file_url });
+      });
+    } else {
+      // Insert
+      db.run("INSERT INTO checklist_submissions (user_id, task_id, file_url, status) VALUES (?, ?, ?, 'pending')", 
+      [user_id, task_id, file_url], function(err) {
+        if (err) return res.status(500).json({ error: "Gagal menyimpan pengajuan dokumen" });
+        res.json({ message: "Dokumen berhasil diunggah dan sedang menunggu verifikasi.", file_url: file_url, submission_id: this.lastID });
+      });
+    }
+  });
+});
+
+// Get submissions for logged in user
+app.get("/api/checklist/submissions", authenticateToken, (req, res) => {
+  const user_id = req.user.id;
+  db.all("SELECT id, task_id, file_url, status, admin_feedback, created_at FROM checklist_submissions WHERE user_id = ? ORDER BY created_at DESC", 
+  [user_id], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: "Gagal mengambil data pengajuan" });
+    }
+    res.json(rows);
+  });
+});
+
+// --- ADMIN API FOR SUBMISSIONS ---
+
+function authenticateAdmin(req, res, next) {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+
+  if (token == null) return res.status(401).json({ error: "Akses ditolak" });
+
+  jwt.verify(token, JWT_SECRET, (err, user) => {
+    if (err) return res.status(403).json({ error: "Token tidak valid" });
+    if (user.role !== 'admin') return res.status(403).json({ error: "Akses ditolak. Bukan admin." });
+    req.user = user;
+    next();
+  });
+}
+
+// Get all submissions for admin
+app.get("/api/admin/submissions", authenticateAdmin, (req, res) => {
+  const query = `
+    SELECT s.id, s.task_id, s.file_url, s.status, s.admin_feedback, s.created_at, 
+           u.username as user_name, u.email as user_email
+    FROM checklist_submissions s
+    JOIN users u ON s.user_id = u.id
+    WHERE s.id IN (
+      SELECT MAX(id)
+      FROM checklist_submissions
+      GROUP BY user_id, task_id
+    )
+    ORDER BY CASE WHEN s.status = 'pending' THEN 0 ELSE 1 END, s.created_at DESC
+  `;
+  
+  db.all(query, [], (err, rows) => {
+    if (err) {
+      return res.status(500).json({ error: "Gagal mengambil data pengajuan" });
+    }
+    res.json(rows);
+  });
+});
+
+// Approve submission
+app.put("/api/admin/submissions/:id/approve", authenticateAdmin, (req, res) => {
+  const submissionId = req.params.id;
+  
+  db.get("SELECT user_id, task_id FROM checklist_submissions WHERE id = ?", [submissionId], (err, sub) => {
+    if (err || !sub) {
+      return res.status(404).json({ error: "Pengajuan tidak ditemukan" });
+    }
+    
+    // Update submission status
+    db.run("UPDATE checklist_submissions SET status = 'approved', admin_feedback = NULL WHERE id = ?", [submissionId], (err) => {
+      if (err) return res.status(500).json({ error: "Gagal mengupdate status pengajuan" });
+      
+      // Auto complete the task for the user
+      db.get("SELECT id FROM user_checklists WHERE user_id = ? AND task_id = ?", [sub.user_id, sub.task_id], (err, row) => {
+        if (row) {
+          db.run("UPDATE user_checklists SET is_completed = 1 WHERE user_id = ? AND task_id = ?", [sub.user_id, sub.task_id]);
+        } else {
+          db.run("INSERT INTO user_checklists (user_id, task_id, is_completed) VALUES (?, ?, 1)", [sub.user_id, sub.task_id]);
+        }
+      });
+      
+      res.json({ message: "Pengajuan disetujui dan task otomatis selesai." });
+    });
+  });
+});
+
+// Reject submission
+app.put("/api/admin/submissions/:id/reject", authenticateAdmin, (req, res) => {
+  const submissionId = req.params.id;
+  const { feedback } = req.body;
+  
+  if (!feedback) {
+    return res.status(400).json({ error: "Alasan penolakan wajib diisi" });
+  }
+  
+  db.run("UPDATE checklist_submissions SET status = 'rejected', admin_feedback = ? WHERE id = ?", [feedback, submissionId], (err) => {
+    if (err) return res.status(500).json({ error: "Gagal mengupdate status pengajuan" });
+    res.json({ message: "Pengajuan ditolak." });
+  });
+});
+
 // Admin Checklists
 app.get("/api/admin/checklists", authenticateAdmin, (req, res) => {
-  db.all("SELECT * FROM checklists", (err, checklists) => {
+  db.all("SELECT * FROM checklists ORDER BY id ASC", (err, checklists) => {
     if (err) return res.status(500).json({ error: "Gagal mengambil data." });
     db.all("SELECT * FROM checklist_subtasks", (err, subtasks) => {
       if (err) return res.status(500).json({ error: "Gagal mengambil data." });
