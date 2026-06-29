@@ -1,0 +1,20 @@
+{
+  "rewrites": [
+    {
+      "source": "/chat",
+      "destination": "https://kppedia-backend.up.railway.app/chat"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "https://kppedia-backend.up.railway.app/api/:path*"
+    },
+    {
+      "source": "/uploads/:path*",
+      "destination": "https://kppedia-backend.up.railway.app/uploads/:path*"
+    },
+    {
+      "source": "/documents/:path*",
+      "destination": "https://kppedia-backend.up.railway.app/documents/:path*"
+    }
+  ]
+}
