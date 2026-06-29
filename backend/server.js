@@ -568,7 +568,7 @@ app.post("/chat", authenticateToken, async (req, res) => {
       );
     });
 
-    const relevantChunks = retrieve(message, 3);
+    const relevantChunks = retrieve(message, 5);
     let reply = "";
     
     // Ambil data kelayakan dan checklist untuk injeksi konteks
@@ -615,7 +615,7 @@ ${context}`,
           },
         ],
         temperature: 0.3,
-        max_tokens: 512,
+        max_tokens: 2048,
       });
       reply = completion.choices[0].message.content;
     }

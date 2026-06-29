@@ -32,7 +32,7 @@ async function extractAndChunk() {
 
 
   const cleanedText = cleanText(fullText);
-  const chunks = chunkText(cleanedText, 200, 50);
+  const chunks = chunkText(cleanedText, 500, 100);
 
   console.log(`Total chunks dari semua PDF : ${chunks.length}`);
 

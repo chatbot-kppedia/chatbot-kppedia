@@ -22,8 +22,8 @@ function retrieve(query, topK = 5) {
     throw new Error("Vector store kosong. Jalankan storeChunks() terlebih dahulu.");
   }
 
-  // Expand query dengan kata kunci tambahan
-  const expandedQuery = query + " SKS IPK syarat mahasiswa peserta kerja praktik minimal penalti sanksi nilai indeks proposal laporan bimbingan";
+  // Gunakan query langsung tanpa ekspansi statis agar pencarian lebih akurat
+  const expandedQuery = query;
 
   const scores = [];
 
