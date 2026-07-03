@@ -4,7 +4,8 @@
 KPedia adalah aplikasi web RAG (*Retrieval-Augmented Generation*) Chatbot dan Smart Checklist Asisten Kerja Praktik (KP) yang dirancang untuk membantu mahasiswa Telkom University Surabaya dalam merencanakan, melaksanakan, dan menyelesaikan seluruh rangkaian proses Kerja Praktik.
 
 🚀 **Link Live Demo:** [https://chatbot-kppedia.vercel.app](https://chatbot-kppedia.vercel.app)
-📁 **Laporan Tugas Besar** (https://drive.google.com/file/d/1whF-B4obJa_s-M1RpihrZ1gftlrmmNsc/view?usp=sharing)
+
+📁 **Laporan Tugas Besar** https://acesse.one/laporantubesai
 
 ---
 
